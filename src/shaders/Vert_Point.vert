@@ -1,4 +1,3 @@
-
 #version 430
 
 uniform mat4 world;
