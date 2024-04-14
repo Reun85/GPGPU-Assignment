@@ -15,12 +15,7 @@
 
 // Utils
 #include "Camera.h"
-#include "GLUtils.hpp"
-
-struct SUpdateInfo {
-  float ElapsedTimeInSec = 0.0f; // Program indulása óta eltelt idő
-  float DeltaTimeInSec = 0.0f;   // Előző Update óta eltelt idő
-};
+#include "SUpdateInfo.h"
 
 class CMyApp {
 public:
