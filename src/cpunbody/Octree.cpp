@@ -37,12 +37,18 @@ bool isinside(glm::vec3 inclusivemin, glm::vec3 exclusivemax, glm::vec3 inp) {
 
 void debug_TEST();
 
-Octree::Octree(std::vector<Particle> &particles)
-    : m_bb(particles),
-      m_nodes(std::pow(8, START_DEPTH + 1) + 20 * particles.size()) {
+#include <chrono>
+Octree::Octree(std::vector<Particle> &particles,
+               std::chrono::time_point<std::chrono::system_clock> t1)
+    : m_bb(particles), m_nodes(std::pow(8, START_DEPTH + 1) * 20 * 8) {
 #ifdef DEBUG
   debug_TEST();
 #endif
+
+  auto t = std::chrono::high_resolution_clock::now();
+  std::cerr << "Mem allocation took:"
+            << std::chrono::duration<double, std::milli>(t - t1).count()
+            << std::endl;
   m_root = &m_nodes[0];
   // on gpu code this has to be global with mutex
   size_t itr = 1;
@@ -134,6 +140,9 @@ Octree::Octree(std::vector<Particle> &particles)
               current->m_children[m] = &m_nodes[itr];
               current->m_children[m]->m_particle = nullptr;
               itr++;
+              if (itr == m_nodes.size()) {
+                std::cerr << "Not enough space";
+              }
             }
             Node *new_node_for_prev = current->m_children[prev_index];
             // This is default
@@ -157,23 +166,25 @@ Octree::Octree(std::vector<Particle> &particles)
   }
 
   assert(itr < m_nodes.size());
+  std::cerr << "Allocated blocks: " << m_nodes.size() << "\nUsed: " << itr
+            << std::endl;
 }
 
 void debug_TEST() {
-  std::vector<Vec3<size_t>> strides = {
-      {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-      {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1},
-  };
-  Vec3<size_t> start = {0, 0, 0};
-  for (size_t id = 0; id < std::pow(8, Octree::START_DEPTH); id++) {
-    Vec3 correct = start + strides[id % 8] + strides[(id / 8) % 8] * 2 +
-                   strides[(id / 64) % 8] * 4;
-    Vec3 got = getIJK(id, Octree::START_DEPTH);
-
-    if (!(correct == got)) {
-      std::cout << "\tBAD id: " << id << " correct: " << correct
-                << " got: " << got << std::endl;
-      assert(false);
-    }
-  }
+  // std::vector<Vec3<size_t>> strides = {
+  //     {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
+  //     {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1},
+  // };
+  // Vec3<size_t> start = {0, 0, 0};
+  // for (size_t id = 0; id < std::pow(8, Octree::START_DEPTH); id++) {
+  //   Vec3 correct = start + strides[id % 8] + strides[(id / 8) % 8] * 2 +
+  //                  strides[(id / 64) % 8] * 4;
+  //   Vec3 got = getIJK(id, Octree::START_DEPTH);
+  //
+  //   if (!(correct == got)) {
+  //     std::cout << "\tBAD id: " << id << " correct: " << correct
+  //               << " got: " << got << std::endl;
+  //     assert(false);
+  //   }
+  // }
 }

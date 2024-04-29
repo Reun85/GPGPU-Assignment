@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <chrono>
 #include <ostream>
 #include <vector>
 
@@ -59,10 +60,11 @@ class Node {
 class Octree {
  public:
   // The default times it is cut before injecting elements
-  static constexpr size_t START_DEPTH = 2;
+  static constexpr size_t START_DEPTH = 4;
   Node *m_root;
   BoundingBox m_bb;
-  Octree(std::vector<Particle> &particles);
+  Octree(std::vector<Particle> &particles,
+         std::chrono::time_point<std::chrono::system_clock>);
 
  private:
   // Worst case scenario is 8^START_DEPTH+2*particles.size()

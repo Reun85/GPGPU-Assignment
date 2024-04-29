@@ -18,7 +18,7 @@
 #include "cpunbody/Nbody.h"
 int main(int argc, char* args[]) {
   {
-    int ret = test();
+    int ret = testNBody();
     if (ret != 0) {
       std::cout << (ret - 1) << std::endl;
       return ret - 1;
