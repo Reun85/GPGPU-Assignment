@@ -59,7 +59,7 @@ class Node {
 class Octree {
  public:
   // The default times it is cut before injecting elements
-  static constexpr size_t START_DEPTH = 2;
+  static constexpr size_t START_DEPTH = 4;
   Node *m_root;
   BoundingBox m_bb;
   Octree(std::vector<Particle> &particles);
