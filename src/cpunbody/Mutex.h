@@ -18,6 +18,9 @@ public:
 
   ~DataMutex() {
     // Wait until is mutex is unlocked
+    // Does fail if there is another thread waiting to lock this mutex, since
+    // this may get the lock then drop the data. Its on the user to ensure this
+    // does not happen.
     m_mutex.lock();
   }
 
