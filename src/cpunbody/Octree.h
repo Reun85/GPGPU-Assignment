@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <ostream>
 #include <vector>
 
@@ -48,11 +49,6 @@ class Node {
     Particle *m_particle = nullptr;
   };
   bool m_is_leaf = true;
-  glm::vec3 center;
-  glm::vec3 size;
-  Node *parent;
-  Vec3<size_t> indices = {999, 999, 999};
-  glm::vec3 prev_center;
 };
 
 class Octree {

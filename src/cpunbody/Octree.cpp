@@ -132,17 +132,11 @@ Octree::Octree(std::vector<Particle> &particles)
     size_t k = other.z;
     Node *current = &m_nodes[start_ind + id];
 
-    current->indices = other;
-
     glm::vec3 start_depth_center =
         m_center + full_min +
         glm::vec3(i * start_depth_size.x, j * start_depth_size.y,
                   k * start_depth_size.z) +
         start_depth_size / 2.0f;
-    current->prev_center = start_depth_center;
-    std::cout << "\nid: " << id
-              << "\n\tcenter: " << Vec3<float>(start_depth_center)
-              << "\n\t i,j,k: " << other << std::endl;
 
     for (int particleind = 0; particleind < particles.size(); particleind++) {
       bool done = false;
@@ -157,8 +151,6 @@ Octree::Octree(std::vector<Particle> &particles)
         done = true;
       }
       if (!done) {
-        std::cout << "\t\tParticle: " << Vec3<float>(particle_pos)
-                  << "  ParticleId: " << particleind << std::endl;
       }
       int iteratorcount = -1;
       while (!done) {
@@ -172,9 +164,6 @@ Octree::Octree(std::vector<Particle> &particles)
         int index = (particle_pos.x > current_block_center.x ? 1 : 0) +
                     (particle_pos.y > current_block_center.y ? 2 : 0) +
                     (particle_pos.z > current_block_center.z ? 4 : 0);
-        std::cout << "\tCurrent_center" << Vec3<float>(current_block_center)
-                  << "\n\toctant: " << Vec3<float>(octant)
-                  << " index: " << index << std::endl;
 
         if (current->m_is_leaf) {
           // If it is a leaf
@@ -203,8 +192,6 @@ Octree::Octree(std::vector<Particle> &particles)
             Node *new_node_for_prev = current->m_children[prev_index];
             // This is default
             new_node_for_prev->m_is_leaf = true;
-            std::cout << "Conflict : " << Vec3<float>(tmpparticle->m_position)
-                      << " prev index: " << prev_index << std::endl;
             new_node_for_prev->m_particle = tmpparticle;
 
             current_block_size /= 2.0f;
@@ -243,10 +230,4 @@ void debug_TEST() {
       assert(false);
     }
   }
-  // for (int i = 0; i < 8; i++) {
-  //   for (int j = 0; j < 8; j++) {
-  //     std::cout << "i: " << i << " j: " << j << " " << getIJK(i * 8 + j, 2)
-  //               << std::endl;
-  //   }
-  // }
 }
