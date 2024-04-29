@@ -39,3 +39,8 @@ BoundingBox::BoundingBox(const std::vector<Particle> &particles) {
   m_min = min;
   m_max = max;
 }
+
+void BoundingBox::AdjustToFitAll() {
+  m_min -= BoundingBox::EPS;
+  m_max += BoundingBox::EPS;
+}

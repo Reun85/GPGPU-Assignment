@@ -6,6 +6,7 @@
 #include "BoundingBox.h"
 #include "Particle.h"
 
+// Essentially just a tuple type.
 template <typename T>
 struct Vec3 {
   T x, y, z;
@@ -39,9 +40,13 @@ std::ostream &operator<<(std::ostream &os, const Vec3<T> &vec) {
 }
 class Node {
  public:
-  static const std::vector<glm::vec3> m_offsets;
+  static const std::array<glm::vec3, 8> OFFSETS;
   union {
     /*
+     6 7
+      2 3
+     4 5
+      0 1
 
 
     */

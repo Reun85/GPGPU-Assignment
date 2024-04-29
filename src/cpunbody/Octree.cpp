@@ -4,10 +4,14 @@
 #include <cmath>
 #include <iostream>
 
-const std::vector<glm::vec3> Node::m_offsets = {
-    {-1, -1, -1}, {1, -1, -1}, {-1, 1, -1}, {1, 1, -1},
-    {-1, -1, 1},  {1, -1, 1},  {-1, 1, 1},  {1, 1, 1},
-};
+const std::array<glm::vec3, 8> Node::OFFSETS = {glm::vec3{-1.f, -1.f, -1.f},
+                                                {1, -1, -1},
+                                                {-1, 1, -1},
+                                                {1, 1, -1},
+                                                {-1, -1, 1},
+                                                {1, -1, 1},
+                                                {-1, 1, 1},
+                                                {1, 1, 1}};
 
 constexpr size_t mod8at(size_t inp, size_t j) {
   constexpr size_t mask = 7;
@@ -31,62 +35,6 @@ bool isinside(glm::vec3 inclusivemin, glm::vec3 exclusivemax, glm::vec3 inp) {
          glm::max(exclusivemax, inp) == exclusivemax;
 }
 
-std::ostream &operator<<(std::ostream &os, const Octree &octree) {
-  /// Set sizes for Octree Nodes
-
-  struct Stuff {
-    Node *node;
-    size_t depth;
-    Vec3<size_t> ijk;
-  };
-  std::vector<Vec3<size_t>> strides = {
-      {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-      {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1},
-  };
-  os << "Octree: \n{\n";
-
-  std::vector<Stuff> stack;
-  stack.push_back({octree.m_root, 0, {0, 0, 0}});
-
-  octree.m_root->center = octree.m_center;
-
-  octree.m_root->size = octree.m_size;
-
-  while (!stack.empty()) {
-    Stuff current = stack.back();
-    stack.pop_back();
-    if (current.depth == Octree::START_DEPTH) {
-      os << "Node: \n\t ijk:" << current.ijk << "\n\t"
-         << Vec3<float>(current.node->center)
-         << "\n\tprev: " << current.node->indices
-         << "\n\tprev: " << Vec3<float>(current.node->prev_center) << std::endl;
-    }
-    if (!current.node->m_is_leaf) {
-      for (int i = 0; i < 8; i++) {
-        current.node->m_children[i]->center =
-            current.node->center +
-            0.25f * current.node->size * Node::m_offsets[i];
-        current.node->m_children[i]->size = current.node->size * 0.5f;
-
-        stack.push_back(
-            {current.node->m_children[i], current.depth + 1,
-             current.ijk + strides[i] * std::pow(2, Octree::START_DEPTH - 1 -
-                                                        current.depth)});
-      }
-    } else {
-      if (current.node->m_particle != nullptr) {
-        os << "Particle: " << Vec3<float>(current.node->m_particle->m_position)
-           << std::endl;
-      }
-    }
-  }
-
-  os << "}" << std::endl;
-  os << "center" << Vec3<float>(octree.m_center) << std::endl;
-  os << "size" << Vec3<float>(octree.m_size) << std::endl;
-
-  return os;
-}
 void debug_TEST();
 
 Octree::Octree(std::vector<Particle> &particles)
@@ -116,13 +64,14 @@ Octree::Octree(std::vector<Particle> &particles)
 
   // Calculate the bounding box of that box of space
   m_center = m_bb.GetCenter();
-  glm::vec3 full_min = m_bb.GetMin() - m_center - 0.01f;
-  glm::vec3 full_max = m_bb.GetMax() - m_center + 0.01f;
+
+  m_bb.AdjustToFitAll();
+  glm::vec3 full_min = m_bb.GetMin() - m_center;
+  glm::vec3 full_max = m_bb.GetMax() - m_center;
   m_size = full_max - full_min;
 
   glm::vec3 start_depth_size =
       static_cast<float>(std::pow(0.5f, START_DEPTH)) * m_size;
-  std::cout << Vec3<float>(start_depth_size) << std::endl;
   for (size_t id = 0; id < std::pow(8, START_DEPTH); id++) {
     // Since the space is split into 8^START_DEPTH, we can extract the i, j, k
     // coordinates as such:
@@ -152,10 +101,7 @@ Octree::Octree(std::vector<Particle> &particles)
       }
       if (!done) {
       }
-      int iteratorcount = -1;
       while (!done) {
-        iteratorcount++;
-        std::cout << iteratorcount << std::endl;
         glm::vec3 octant =
             glm::vec3(particle_pos.x > current_block_center.x ? 1 : -1,
                       particle_pos.y > current_block_center.y ? 1 : -1,
