@@ -6,9 +6,8 @@ set(PROJECT_NAME "GPGPU")
 set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g")
 # Hozzá ad egy flaget amiből lehet tudni, hogy DEBUG módban indítottuk el a programot.
-set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g")
 
 set(CMAKE_CXX_FLAGS "-Wall -pedantic ")
 set(CMAKE_CXX_STANDARD 17)

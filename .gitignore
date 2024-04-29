@@ -1,3 +1,4 @@
-build
 src/.vs
+build
+out
 .cache/clangd/index

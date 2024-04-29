@@ -2,27 +2,28 @@
 
 default: run
 
-PROJECT_NAME = "GPGPU"
+PROJECT_NAME = GPGPU
+BUILD_DIR = out
+RELEASE_FOLDER=${BUILD_DIR}/Release
+DEBUG_FOLDER=${BUILD_DIR}/Debug
 release_run:
-	cd build && time cmake --build . --config Release
-	cd src && time ../build/${PROJECT_NAME}
+	cmake -B ./${RELEASE_FOLDER} -S .
+	cmake --build ./${RELEASE_FOLDER} --config Debug
+	cd src && ../${RELEASE_FOLDER}/${PROJECT_NAME}
 
 # Futtatja a programot DEBUG flagekkel.
 run:
-	cd build && time cmake --build . --config Debug
-	# A "src" mappában indítja el a programot, tehát a "src" mappához relatív útvonalakkal kell hivatkozni a shaderekre, textúrákra, egyéb fájlokra. (Ezt a módszert használja a Visual Studio is.)
-	cd src && time ../build/${PROJECT_NAME}
-
-# Konfigurálja a projektet
-setup:
-	cmake -B build -S .
+	cmake -B ./${DEBUG_FOLDER} -S .
+	cmake --build ./${DEBUG_FOLDER} --config Debug
+# A "src" mappában indítja el a programot, tehát a "src" mappához relatív útvonalakkal kell hivatkozni a shaderekre, textúrákra, egyéb fájlokra. (Ezt a módszert használja a Visual Studio is.)
+	cd src && ../${DEBUG_FOLDER}/${PROJECT_NAME}
+	
 
 # Újra konfigurálja a projektet
 # (Amennyiben véletlenül hibásan módosítottuk a build mappát)
 clean:
-	rm -rf ./build
-	rm -rf ./cache
-	$(MAKE) setup
+	rm -rf ${BUILD_DIR}
+	rm -rf ./.cache
 
 # Konfigurálja a programot és ellenőrzi, hogy a kezdő projekt működik-e
 test: clean
