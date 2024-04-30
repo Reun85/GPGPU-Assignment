@@ -1,14 +1,11 @@
-cmake -B ./out/Debug -S .
+cmake -B ./out/Release -S . -G Ninja
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
--- Build files have been written to: /home/reun/all/elte/04/GPGPU/Assignment/out/Debug
-cmake --build ./out/Debug --config Debug
-make[1]: Entering directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Debug'
-[  9%] Building CXX object CMakeFiles/GPGPU.dir/src/cpunbody/Nbody.cpp.o
-[ 18%] Linking CXX executable GPGPU
-[100%] Built target GPGPU
-make[1]: Leaving directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Debug'
-cd src && ../out/Debug/GPGPU
+-- Build files have been written to: /home/reun/all/elte/04/GPGPU/Assignment/out/Release
+cmake --build ./out/Release --config Release
+[0/2] Re-checking globbed directories...
+ninja: no work to do.
+cd src && ../out/Release/GPGPU
 Octree: 
 {
 	Node:
