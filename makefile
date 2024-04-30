@@ -7,13 +7,13 @@ BUILD_DIR = out
 RELEASE_FOLDER=${BUILD_DIR}/Release
 DEBUG_FOLDER=${BUILD_DIR}/Debug
 release_run:
-	cmake -B ./${RELEASE_FOLDER} -S .
-	cmake --build ./${RELEASE_FOLDER} --config Debug
+	cmake -B ./${RELEASE_FOLDER} -S . -G Ninja
+	cmake --build ./${RELEASE_FOLDER} --config Release
 	cd src && ../${RELEASE_FOLDER}/${PROJECT_NAME}
 
 # Futtatja a programot DEBUG flagekkel.
 run:
-	cmake -B ./${DEBUG_FOLDER} -S .
+	cmake -B ./${DEBUG_FOLDER} -S . -G Ninja
 	cmake --build ./${DEBUG_FOLDER} --config Debug
 # A "src" mappában indítja el a programot, tehát a "src" mappához relatív útvonalakkal kell hivatkozni a shaderekre, textúrákra, egyéb fájlokra. (Ezt a módszert használja a Visual Studio is.)
 	cd src && ../${DEBUG_FOLDER}/${PROJECT_NAME}

@@ -63,13 +63,14 @@ class Octree {
   static constexpr size_t START_DEPTH = 4;
   Node *m_root;
   BoundingBox m_bb;
-  Octree(std::vector<Particle> &particles,
-         std::chrono::time_point<std::chrono::system_clock>);
+  Octree(std::vector<Particle> &particles);
+  void Recalculate(std::vector<Particle> &particles);
 
  private:
-  // Worst case scenario is 8^START_DEPTH+2*particles.size()
   std::vector<Node> m_nodes;
   glm::vec3 m_size;
   glm::vec3 m_center;
+  size_t start_ind;
+  size_t itr_start;
   friend std::ostream &operator<<(std::ostream &os, const Octree &octree);
 };

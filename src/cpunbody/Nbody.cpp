@@ -17,7 +17,6 @@ int testNBody() {
   std::vector<Particle> particles;
   static constexpr int num = 4;
   static const size_t res = std::pow(num * 2 + 1, 3);
-  auto timestmp1 = std::chrono::high_resolution_clock::now();
   std::cerr << "number of particles:" << res << std::endl;
 
   particles.reserve(res);
@@ -33,23 +32,9 @@ int testNBody() {
       }
     }
   }
-  auto timestmp2 = std::chrono::high_resolution_clock::now();
   BoundingBox bb(particles);
-  auto timestmp3 = std::chrono::high_resolution_clock::now();
-  Octree oc(particles, timestmp3);
-  auto timestmp4 = std::chrono::high_resolution_clock::now();
+  Octree oc(particles);
   std::cout << oc << std::endl;
-  auto timestmp5 = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double, std::milli> elapsed1 = timestmp3 - timestmp2;
-  std::chrono::duration<double, std::milli> elapsed2 = timestmp4 - timestmp3;
-  std::chrono::duration<double, std::milli> elapsed3 = timestmp5 - timestmp4;
-  std::cerr << "Time to generate: " << elapsed1.count()
-            << "\nTime to parse: " << elapsed2.count()
-            << "\nTime to print: " << elapsed3.count()
-            << "\nBoundingBox Calculate: "
-            << std::chrono::duration<double, std::milli>(timestmp2 - timestmp1)
-                   .count()
-            << std::endl;
 
   return 1;
 }

@@ -38,12 +38,12 @@ bool isinside(glm::vec3 inclusivemin, glm::vec3 exclusivemax, glm::vec3 inp) {
 void debug_TEST();
 
 Octree::Octree(std::vector<Particle> &particles)
-    : m_bb(particles), m_nodes(std::pow(8, START_DEPTH + 1) * 100 * 8) {
+    : m_nodes(std::pow(8, START_DEPTH + 1) * 100 * 8) {
   m_root = &m_nodes[0];
   // on gpu code this has to be global with mutex
   size_t itr = 1;
   // Divide into START_DEPTH size
-  size_t start_ind = 0;
+  start_ind = 0;
   size_t end_ind = 1;
   // START_DEPTH - 1, we will do the last block with Z indexing
   for (size_t i = 0; i < START_DEPTH - 1; i++) {
@@ -72,20 +72,22 @@ Octree::Octree(std::vector<Particle> &particles)
         size_t index =
             other.x * stridei + other.y * stridej + other.z * stridek;
         current->m_children[k] = &m_nodes[end_ind + index];
-        itr++;
         id++;
       }
       current->m_is_leaf = false;
     }
     start_ind = end_ind;
-    end_ind = itr;
+    itr_start = id + end_ind;
   }
-  auto t = std::chrono::high_resolution_clock::now();
-  std::cerr << "Basic allocation took:"
-            << std::chrono::duration<double, std::milli>(t - t1).count()
-            << std::endl;
 
+  Recalculate(particles);
+}
+
+void Octree::Recalculate(std::vector<Particle> &particles) {
+  size_t stride = std::pow(2, START_DEPTH);
+  size_t itr = itr_start;
   // Calculate the bounding box of that box of space
+  m_bb.Recalculate(particles);
   m_center = m_bb.GetCenter();
 
   m_bb.AdjustToFitAll();
@@ -120,7 +122,7 @@ Octree::Octree(std::vector<Particle> &particles)
       bool done = false;
       glm::vec3 current_block_center = start_depth_center;
       Particle *const particle = &particles[particleind];
-      const glm::vec3 particle_pos = particles[particleind].m_position;
+      glm::vec3 particle_pos = particles[particleind].m_position;
       glm::vec3 current_block_size = start_depth_size / 2.0f;
       // if not inside :)
 
@@ -191,25 +193,6 @@ Octree::Octree(std::vector<Particle> &particles)
   assert(itr < m_nodes.size());
   std::cerr << "Allocated blocks: " << m_nodes.size() << "\nUsed: " << itr
             << std::endl;
-}
-
-void debug_TEST() {
-  std::vector<Vec3<size_t>> strides = {
-      {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-      {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1},
-  };
-  Vec3<size_t> start = {0, 0, 0};
-  for (size_t id = 0; id < std::pow(8, Octree::START_DEPTH); id++) {
-    Vec3 correct = start + strides[id % 8] + strides[(id / 8) % 8] * 2 +
-                   strides[(id / 64) % 8] * 4;
-    Vec3 got = getIJK(id, Octree::START_DEPTH);
-
-    if (!(correct == got)) {
-      std::cout << "\tBAD id: " << id << " correct: " << correct
-                << " got: " << got << std::endl;
-      assert(false);
-    }
-  }
 }
 
 void debug_TEST() {

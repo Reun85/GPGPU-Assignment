@@ -13,6 +13,10 @@
 // }
 
 BoundingBox::BoundingBox(const std::vector<Particle> &particles) {
+  Recalculate(particles);
+}
+
+void BoundingBox::Recalculate(const std::vector<Particle> &particles) {
   // GPU like implementation
   // 256 groups
   static const size_t workGroupSize = 4;

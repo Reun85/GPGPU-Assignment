@@ -7,8 +7,11 @@
 /// AABB Bounding Box
 class BoundingBox {
  public:
+  BoundingBox() = default;
   BoundingBox(glm::vec3 min, glm::vec3 max) : m_min(min), m_max(max) {}
   BoundingBox(const std::vector<Particle> &particles);
+
+  void Recalculate(const std::vector<Particle> &particles);
 
   /// NOTE: May be used later.
   bool Contains(const Particle &particle) const;
