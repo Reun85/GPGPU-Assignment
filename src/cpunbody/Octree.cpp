@@ -46,9 +46,6 @@ Octree::Octree(std::vector<Particle> &particles,
 #endif
 
   auto t = std::chrono::high_resolution_clock::now();
-  std::cerr << "Mem allocation took:"
-            << std::chrono::duration<double, std::milli>(t - t1).count()
-            << std::endl;
   m_root = &m_nodes[0];
   // on gpu code this has to be global with mutex
   size_t itr = 1;
@@ -65,6 +62,9 @@ Octree::Octree(std::vector<Particle> &particles,
     start_ind = end_ind;
     end_ind = itr;
   }
+  std::cerr << "Basic allocation took:"
+            << std::chrono::duration<double, std::milli>(t - t1).count()
+            << std::endl;
 
   // Calculate the bounding box of that box of space
   m_center = m_bb.GetCenter();
