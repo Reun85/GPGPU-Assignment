@@ -26,4 +26,4 @@ class NBody {
   std::vector<Particle> m_particles;
 };
 
-int test();
+int testNBody();

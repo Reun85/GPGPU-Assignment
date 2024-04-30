@@ -54,6 +54,9 @@ std::ostream &operator<<(std::ostream &os, const Octree &octree) {
     // if (current->depth == Octree::START_DEPTH) {
     //   os << current.get();
     // }
+    if (current->depth == Octree::START_DEPTH) {
+      os << current.get();
+    }
     if (!current->node->m_is_leaf) {
       glm::vec3 currsize = 0.5f * current->size;
       for (int i = 0; i < 8; i++) {
