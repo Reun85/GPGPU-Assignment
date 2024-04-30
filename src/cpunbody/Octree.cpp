@@ -58,10 +58,8 @@ Octree::Octree(std::vector<Particle> &particles,
   for (size_t i = 0; i < START_DEPTH; i++) {
     for (size_t j = start_ind; j < end_ind; j++) {
       Node *current = &m_nodes[j];
-      for (int k = 0; k < 8; k++) {
-        current->m_children[k] = &m_nodes[itr];
-        itr++;
-      }
+      current->m_children = &m_nodes[itr];
+      itr += 8;
       current->m_is_leaf = false;
     }
     start_ind = end_ind;
@@ -136,15 +134,15 @@ Octree::Octree(std::vector<Particle> &particles,
                 (prev_particle_pos.x > current_block_center.x ? 1 : 0) +
                 (prev_particle_pos.y > current_block_center.y ? 2 : 0) +
                 (prev_particle_pos.z > current_block_center.z ? 4 : 0);
+            current->m_children = &m_nodes[itr];
+            itr += 8;
             for (int m = 0; m < 8; m++) {
-              current->m_children[m] = &m_nodes[itr];
-              current->m_children[m]->m_particle = nullptr;
-              itr++;
+              (current->m_children + m)->m_particle = nullptr;
               if (itr == m_nodes.size()) {
                 std::cerr << "Not enough space";
               }
             }
-            Node *new_node_for_prev = current->m_children[prev_index];
+            Node *new_node_for_prev = (current->m_children + prev_index);
             // This is default
             new_node_for_prev->m_is_leaf = true;
             new_node_for_prev->m_particle = tmpparticle;
@@ -152,14 +150,14 @@ Octree::Octree(std::vector<Particle> &particles,
             current_block_size /= 2.0f;
             current_block_center =
                 current_block_center + (current_block_size / 2.0f) * octant;
-            current = current->m_children[index];
+            current = (current->m_children + index);
           }
         } else {
           // If it is not a leaf
           current_block_size /= 2.0f;
           current_block_center =
               current_block_center + (current_block_size / 2.0f) * octant;
-          current = current->m_children[index];
+          current = (current->m_children + index);
         }
       }
     }

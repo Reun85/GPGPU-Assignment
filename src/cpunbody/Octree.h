@@ -51,7 +51,7 @@ class Node {
 
 
     */
-    Node *m_children[8];
+    Node *m_children;
     Particle *m_particle = nullptr;
   };
   bool m_is_leaf = true;

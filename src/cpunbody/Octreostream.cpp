@@ -57,8 +57,8 @@ std::ostream &operator<<(std::ostream &os, const Octree &octree) {
         glm::vec3 currcenter = current->center + (currsize * Node::OFFSETS[i]);
 
         stack.emplace_back(std::make_shared<Stuff>(
-            Stuff{current->node->m_children[i], current->depth + 1, currcenter,
-                  currsize, false, MS(current)}));
+            Stuff{(current->node->m_children + i), current->depth + 1,
+                  currcenter, currsize, false, MS(current)}));
       }
     } else {
       if (current->node->m_particle != nullptr) {
