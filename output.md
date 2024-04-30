@@ -1,14 +1,14 @@
-cmake -B ./out/Debug -S .
+cmake -B ./out/Release -S .
 -- Configuring done (0.0s)
 -- Generating done (0.0s)
--- Build files have been written to: /home/reun/all/elte/04/GPGPU/Assignment/out/Debug
-cmake --build ./out/Debug --config Debug
-make[1]: Entering directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Debug'
-[  9%] Building CXX object CMakeFiles/GPGPU.dir/src/cpunbody/Nbody.cpp.o
+-- Build files have been written to: /home/reun/all/elte/04/GPGPU/Assignment/out/Release
+cmake --build ./out/Release --config Debug
+make[1]: Entering directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Release'
+[  9%] Building CXX object CMakeFiles/GPGPU.dir/src/main.cpp.o
 [ 18%] Linking CXX executable GPGPU
 [100%] Built target GPGPU
-make[1]: Leaving directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Debug'
-cd src && ../out/Debug/GPGPU
+make[1]: Leaving directory '/home/reun/all/elte/04/GPGPU/Assignment/out/Release'
+cd src && ../out/Release/GPGPU
 Octree: 
 {
 	Node:
@@ -7351,4 +7351,4 @@ Octree:
 center(0,0,0)
 size(8.002,8.002,8.002)
 
-0
+Tester returned: 0
