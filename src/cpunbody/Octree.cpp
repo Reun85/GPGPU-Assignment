@@ -45,17 +45,14 @@ Octree::Octree(std::vector<Particle> &particles,
   debug_TEST();
 #endif
 
-  auto t = std::chrono::high_resolution_clock::now();
-  std::cerr << "Mem allocation took:"
-            << std::chrono::duration<double, std::milli>(t - t1).count()
-            << std::endl;
   m_root = &m_nodes[0];
   // on gpu code this has to be global with mutex
   size_t itr = 1;
   // Divide into START_DEPTH size
   size_t start_ind = 0;
   size_t end_ind = 1;
-  for (size_t i = 0; i < START_DEPTH; i++) {
+  // START_DEPTH - 1, we will do the last block with Z indexing
+  for (size_t i = 0; i < START_DEPTH - 1; i++) {
     for (size_t j = start_ind; j < end_ind; j++) {
       Node *current = &m_nodes[j];
       for (int k = 0; k < 8; k++) {
@@ -67,6 +64,32 @@ Octree::Octree(std::vector<Particle> &particles,
     start_ind = end_ind;
     end_ind = itr;
   }
+  // Last
+  size_t stride = std::pow(2, START_DEPTH);
+  {
+    size_t id = 0;
+    size_t stridei = 1;
+    size_t stridej = stride;
+    size_t stridek = stride * stride;
+    for (size_t j = start_ind; j < end_ind; j++) {
+      Node *current = &m_nodes[j];
+      for (int k = 0; k < 8; k++) {
+        Vec3<size_t> other = getIJK(id, START_DEPTH);
+        size_t index =
+            other.x * stridei + other.y * stridej + other.z * stridek;
+        current->m_children[k] = &m_nodes[end_ind + index];
+        itr++;
+        id++;
+      }
+      current->m_is_leaf = false;
+    }
+    start_ind = end_ind;
+    end_ind = itr;
+  }
+  auto t = std::chrono::high_resolution_clock::now();
+  std::cerr << "Basic allocation took:"
+            << std::chrono::duration<double, std::milli>(t - t1).count()
+            << std::endl;
 
   // Calculate the bounding box of that box of space
   m_center = m_bb.GetCenter();
@@ -81,10 +104,16 @@ Octree::Octree(std::vector<Particle> &particles,
   for (size_t id = 0; id < std::pow(8, START_DEPTH); id++) {
     // Since the space is split into 8^START_DEPTH, we can extract the i, j, k
     // coordinates as such:
-    Vec3<size_t> other = getIJK(id, START_DEPTH);
-    size_t i = other.x;
-    size_t j = other.y;
-    size_t k = other.z;
+    size_t tmp = id;
+
+    size_t i = tmp & (stride - 1);
+    tmp = tmp >> START_DEPTH;
+
+    size_t j = tmp & (stride - 1);
+    tmp = tmp >> START_DEPTH;
+    size_t k = tmp & (stride - 1);
+    tmp = tmp >> START_DEPTH;
+
     Node *current = &m_nodes[start_ind + id];
 
     glm::vec3 start_depth_center =
