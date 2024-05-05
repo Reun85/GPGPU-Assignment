@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
-#include <chrono>
+#include <functional>
+#include <memory>
 #include <ostream>
 #include <vector>
 
@@ -57,6 +58,21 @@ class Node {
   bool m_is_leaf = true;
 };
 
+/// Default is bool to have as little size as possible.
+// C++ does not have empty, zero sized types.
+template <typename T = bool>
+class NodeWithExtraInfo {
+ public:
+  Node *inner;
+  size_t depth;
+  glm::vec3 center;
+  glm::vec3 size;
+  std::shared_ptr<NodeWithExtraInfo> parent = nullptr;
+  /// Can be anything
+  /// Must have a default constructor
+  T user;
+};
+
 class Octree {
  public:
   // The default times it is cut before injecting elements
@@ -66,6 +82,13 @@ class Octree {
   Octree(std::vector<Particle> &particles);
   void Recalculate(std::vector<Particle> &particles);
 
+ public:
+  /// T default is bool to have as little size as possible.
+  // C++ does not have empty, zero sized types.
+  template <typename T = bool, bool onlyOnLeaves = false>
+  void DepthFirstTravel(
+      std::function<void(std::shared_ptr<NodeWithExtraInfo<T>>)> fun) const;
+
  private:
   std::vector<Node> m_nodes;
   glm::vec3 m_size;
@@ -74,3 +97,37 @@ class Octree {
   size_t itr_start;
   friend std::ostream &operator<<(std::ostream &os, const Octree &octree);
 };
+
+template <typename T, bool onlyOnLeaves>
+void Octree::DepthFirstTravel(
+    std::function<void(std::shared_ptr<NodeWithExtraInfo<T>>)> fun) const {
+  /// Set sizes for Octree Nodes
+  using MS = std::shared_ptr<NodeWithExtraInfo<T>>;
+  std::vector<std::shared_ptr<NodeWithExtraInfo<T>>> stack;
+  glm::vec3 allsize = m_size;
+  stack.emplace_back(std::make_shared<NodeWithExtraInfo<T>>(
+      NodeWithExtraInfo<T>{m_root, 0, m_center, 0.5f * allsize}));
+
+  while (!stack.empty()) {
+    MS current = stack.back();
+    stack.pop_back();
+    if (!current->inner->m_is_leaf) {
+      glm::vec3 currsize = 0.5f * current->size;
+      for (int i = 0; i < 8; i++) {
+        glm::vec3 currcenter = current->center + (currsize * Node::OFFSETS[i]);
+
+        stack.emplace_back(
+            std::make_shared<NodeWithExtraInfo<T>>(NodeWithExtraInfo<T>{
+                current->inner->m_children[i], current->depth + 1, currcenter,
+                currsize, MS(current)}));
+      }
+    } else {
+      if (onlyOnLeaves) {
+        if (current->inner->m_is_leaf) {
+          fun(current);
+        }
+      } else
+        fun(current);
+    }
+  }
+}
