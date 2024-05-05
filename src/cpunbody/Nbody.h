@@ -20,6 +20,7 @@ class NBody {
   void Init();
   void Clean();
 
+  /// Its not this simulations responsibility to calculate latency.
   void Update(const SUpdateInfo &);
 
  private:

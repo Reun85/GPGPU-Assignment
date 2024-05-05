@@ -1,7 +1,6 @@
 // Utils
 #include "Nbody.h"
 
-#include <chrono>
 #include <iostream>
 
 #include "cpunbody/Octree.h"
