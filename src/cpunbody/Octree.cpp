@@ -118,7 +118,8 @@ void Octree::Recalculate(std::vector<Particle> &particles) {
                   k * start_depth_size.z) +
         start_depth_size / 2.0f;
 
-    for (int particleind = 0; particleind < particles.size(); particleind++) {
+    for (size_t particleind = 0; particleind < particles.size();
+         particleind++) {
       bool done = false;
       glm::vec3 current_block_center = start_depth_center;
       Particle *const particle = &particles[particleind];
