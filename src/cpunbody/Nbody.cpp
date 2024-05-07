@@ -2,12 +2,35 @@
 #include "Nbody.h"
 
 #include <iostream>
+#include <random>
 
 #include "cpunbody/Octree.h"
-NBody::NBody(const int size) {}
+
+std::vector<Particle> DefaultLayout::Generate(const size_t size) {
+  std::vector<Particle> particles;
+  particles.reserve(size);
+
+  std::default_random_engine generator;
+  std::normal_distribution<float> distribution(0.0, 2.0);
+
+  for (size_t i = 0; i < size; ++i) {
+    float x = distribution(generator);
+    float y = distribution(generator);
+    float z = distribution(generator);
+    particles.emplace_back(
+        Particle{glm::vec3(x, y, z), glm::vec3(0), glm::vec3(0)});
+  }
+
+  return particles;
+}
+
 NBody::~NBody() {}
 
-void NBody::Init() {}
+void NBody::Init() {
+  BoundingBox bb(m_particles);
+  Octree oc(m_particles);
+  std::cout << oc << std::endl;
+}
 void NBody::Clean() {}
 
 void NBody::Update(const SUpdateInfo&) {}

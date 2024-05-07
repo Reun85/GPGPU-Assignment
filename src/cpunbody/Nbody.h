@@ -12,9 +12,15 @@
 #include "Particle.h"
 #include "SUpdateInfo.h"
 
+struct DefaultLayout {
+ public:
+  static std::vector<Particle> Generate(const size_t size);
+};
+
 class NBody {
  public:
-  NBody(const int size);
+  template <typename T = DefaultLayout>
+  NBody(const size_t size);
   ~NBody();
 
   void Init();
@@ -27,4 +33,8 @@ class NBody {
   std::vector<Particle> m_particles;
 };
 
+template <typename T>
+NBody::NBody(const size_t size) : m_particles(T::Generate(size)) {
+  Init();
+}
 int testNBody();

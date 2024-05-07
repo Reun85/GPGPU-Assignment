@@ -17,13 +17,8 @@
 #include "MyApp.h"
 #include "cpunbody/Nbody.h"
 int main(int argc, char* args[]) {
-  {
-    int ret = testNBody();
-    if (ret != 0) {
-      std::cout << "Tester returned: " << (ret - 1) << std::endl;
-      return ret - 1;
-    }
-  }
+  NBody nbody(1000);
+  std::exit(0);
   //
   // 1. lépés: inicializáljuk az SDL-t
   //
