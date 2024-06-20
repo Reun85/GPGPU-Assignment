@@ -12,33 +12,33 @@
 //   }
 // }
 
-BoundingBox::BoundingBox(const std::vector<Particle> &particles) {
+BoundingBox::BoundingBox(const std::vector<ParticlePos> &particles) {
   Recalculate(particles);
 }
 
-void BoundingBox::Recalculate(const std::vector<Particle> &particles) {
+void BoundingBox::Recalculate(const std::vector<ParticlePos> &particles) {
   // GPU like implementation
   // 256 groups
   static const size_t workGroupSize = 4;
   const size_t numpergroup = (particles.size()) / (workGroupSize);
-  std::array<std::pair<glm::vec3, glm::vec3>, workGroupSize> minmax{};
+  std::array<std::pair<vec3, vec3>, workGroupSize> minmax{};
   for (int i = 0; i < workGroupSize; i++) {
-    glm::vec3 min = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-    glm::vec3 max = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+    vec3 min = vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+    vec3 max = vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
     size_t start = i * numpergroup;
     size_t end = std::min(start + numpergroup, particles.size());
-    for (int j = start; j < end; j++) {
-      min = glm::min(min, particles[j].m_position);
-      max = glm::max(max, particles[j].m_position);
+    for (size_t j = start; j < end; j++) {
+      min = vec3::min(min, particles[j]);
+      max = vec3::max(max, particles[j]);
     }
     minmax[i] = std::make_pair(min, max);
   }
 
-  glm::vec3 min = glm::vec3(FLT_MAX, FLT_MAX, FLT_MAX);
-  glm::vec3 max = glm::vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+  vec3 min = vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+  vec3 max = vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
   for (int i = 0; i < workGroupSize; i++) {
-    min = glm::min(min, minmax[i].first);
-    max = glm::max(max, minmax[i].second);
+    min = vec3::min(min, minmax[i].first);
+    max = vec3::max(max, minmax[i].second);
   }
   m_min = min;
   m_max = max;

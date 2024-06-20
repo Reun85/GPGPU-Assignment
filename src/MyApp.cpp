@@ -1,16 +1,18 @@
 #include "MyApp.h"
-#include "ObjParser.h"
-#include "ParametricSurfaceMesh.hpp"
-#include "SDL_GLDebugMessageCallback.h"
+
+#include <imgui.h>
 
 #include <cassert>
 #include <cmath>
 #include <glm/common.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
-#include <imgui.h>
 
-CMyApp::CMyApp() {}
+#include "ObjParser.h"
+#include "ParametricSurfaceMesh.hpp"
+#include "SDL_GLDebugMessageCallback.h"
+
+CMyApp::CMyApp(int PARTICLE_SIZE) { count = PARTICLE_SIZE; }
 
 CMyApp::~CMyApp() {}
 
@@ -34,7 +36,7 @@ void CMyApp::InitShaders() {
                   "shaders/Frag_Lighting.frag");
   m_programAxesID = glCreateProgram();
   AssembleProgram(m_programAxesID, "shaders/Vert_axes.vert",
-                  "shaders/Frag_PosCol.frag");
+                  "shaders/Frag_axes.frag");
   m_programPointID = glCreateProgram();
   AssembleProgram(m_programPointID, "shaders/Vert_Point.vert",
                   "shaders/Frag_PosCol.frag");
@@ -59,18 +61,12 @@ void CMyApp::CleanSkyboxShaders() {
   // glDeleteProgram(m_programSkyboxID);
 }
 
-void CMyApp::InitGeometry() {
-  const std::initializer_list<VertexAttributeDescriptor> vertexAttribList = {
-      {0, offsetof(Vertex, position), 3, GL_FLOAT},
-      {1, offsetof(Vertex, normal), 3, GL_FLOAT},
-      {2, offsetof(Vertex, texcoord), 2, GL_FLOAT},
-  };
+void CMyApp::CleanGeometry() { CleanSkyboxGeometry();
 
-  // Skybox
-  InitSkyboxGeometry();
+glDeleteBuffers(1, &VBO);
+  glDeleteVertexArrays(1, &VAO);
+
 }
-
-void CMyApp::CleanGeometry() { CleanSkyboxGeometry(); }
 
 void CMyApp::InitSkyboxGeometry() {
   // skybox geo
@@ -132,8 +128,8 @@ void CMyApp::InitSkyboxGeometry() {
                                          7,
                                      }};
 
-  // m_SkyboxGPU = CreateGLObjectFromMesh(
-  //     skyboxCPU, {{0, offsetof(glm::vec3, x), 3, GL_FLOAT}});
+   //m_SkyboxGPU = CreateGLObjectFromMesh(
+   //    skyboxCPU, {{0, offsetof(glm::vec3, x), 3, GL_FLOAT}});
 }
 
 void CMyApp::CleanSkyboxGeometry() {
@@ -198,18 +194,18 @@ bool CMyApp::Init() {
     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glPointSize.xhtml
     GLfloat pointSizeRange[2] = {0.0f, 0.0f};
     glGetFloatv(GL_POINT_SIZE_RANGE,
-                pointSizeRange); // lekérdezzük a támogatott pontméretek
+                pointSizeRange);  // lekérdezzük a támogatott pontméretek
     // tartományát
-    glPointSize(std::min(16.0f, pointSizeRange[1])); // nagyobb pontok
+    glPointSize(std::min(16.0f, pointSizeRange[1]));  // nagyobb pontok
   }
 
   {
     // https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/glLineWidth.xhtml
     GLfloat lineWidthRange[2] = {0.0f, 0.0f};
     glGetFloatv(GL_LINE_WIDTH_RANGE,
-                lineWidthRange); // lekérdezzük a támogatott
+                lineWidthRange);  // lekérdezzük a támogatott
     // vonalvastagság tartományát
-    glLineWidth(std::min(4.0f, lineWidthRange[1])); // vastagabb vonalak
+    glLineWidth(std::min(4.0f, lineWidthRange[1]));  // vastagabb vonalak
   }
 
   InitShaders();
@@ -220,17 +216,17 @@ bool CMyApp::Init() {
   // egyéb inicializálás
   //
 
-  glEnable(GL_CULL_FACE); // kapcsoljuk be a hátrafelé néző lapok eldobását
-  glCullFace(GL_BACK);    // GL_BACK: a kamerától "elfelé" néző lapok,
+  glEnable(GL_CULL_FACE);  // kapcsoljuk be a hátrafelé néző lapok eldobását
+  glCullFace(GL_BACK);     // GL_BACK: a kamerától "elfelé" néző lapok,
   // GL_FRONT: a kamera felé néző lapok
 
-  glEnable(GL_DEPTH_TEST); // mélységi teszt bekapcsolása (takarás)
+  glEnable(GL_DEPTH_TEST);  // mélységi teszt bekapcsolása (takarás)
 
   // kamera
   m_camera.SetView(
-      glm::vec3(0.0, 7.0, 7.0),  // honnan nézzük a színteret	   - eye
-      glm::vec3(0.0, 0.0, 0.0),  // a színtér melyik pontját nézzük - at
-      glm::vec3(0.0, 1.0, 0.0)); // felfelé mutató irány a világban - up
+      glm::vec3(0.0, 7.0, 7.0),   // honnan nézzük a színteret	   - eye
+      glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
+      glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
 
   return true;
 }
@@ -246,6 +242,38 @@ void CMyApp::Update(const SUpdateInfo &updateInfo) {
 
   m_camera.Update(updateInfo.DeltaTimeInSec);
   // A table flip megnyomása után az objektumokat frissítjük.
+}
+
+void CMyApp::InitGeometry() {
+  glGenVertexArrays(1, &VAO);
+  glBindVertexArray(VAO);
+
+  // Create and bind a Vertex Buffer Object (VBO)
+  glGenBuffers(1, &VBO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  std::vector<vec3> vertices(count);
+  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3),
+                  vertices.data(),GL_STATIC_DRAW);
+
+  // Specify the layout of the vertex data
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3),
+                        reinterpret_cast<const void *>(
+                            0));  // a 0. indexű attribútum hol kezdődik a
+  glEnableVertexAttribArray(0);
+
+  // Unbind the VAO
+  glBindVertexArray(0);
+
+  // Skybox
+  InitSkyboxGeometry();
+}
+void CMyApp::SetParticles(const std::vector<vec3> &vertices) {
+  glBindVertexArray(VAO);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(glm::vec3),
+                  vertices.data());
+  glBindVertexArray(0);
+  count = vertices.size();
 }
 
 void CMyApp::Render() {
@@ -268,6 +296,20 @@ void CMyApp::Render() {
 
     glUseProgram(0);
   }
+
+  glUseProgram(m_programPointID);
+
+  // Bind the VAO and draw points
+  glBindVertexArray(VAO);
+  glPointSize(1.5);
+    glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
+                       glm::value_ptr(glm::identity<glm::mat4>()));
+
+    glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
+                       glm::value_ptr(m_camera.GetViewProj()));
+  glDrawArrays(GL_POINTS, 0, count);
+  glBindVertexArray(0);
+
   //
   // skybox
   //
@@ -339,7 +381,7 @@ GLint CMyApp::ul(const char *uniformName) noexcept {
 // https://wiki.libsdl.org/SDL2/SDL_Keymod
 
 void CMyApp::KeyboardDown(const SDL_KeyboardEvent &key) {
-  if (key.repeat == 0) // Először lett megnyomva
+  if (key.repeat == 0)  // Először lett megnyomva
   {
     if (key.keysym.sym == SDLK_F5 && key.keysym.mod & KMOD_CTRL) {
       CleanShaders();
@@ -349,15 +391,15 @@ void CMyApp::KeyboardDown(const SDL_KeyboardEvent &key) {
       GLint polygonModeFrontAndBack[2] = {};
       // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glGet.xhtml
       glGetIntegerv(GL_POLYGON_MODE,
-                    polygonModeFrontAndBack); // Kérdezzük le a jelenlegi
+                    polygonModeFrontAndBack);  // Kérdezzük le a jelenlegi
       // polygon módot! Külön adja
       // a front és back módokat.
       GLenum polygonMode = (polygonModeFrontAndBack[0] != GL_FILL
                                 ? GL_FILL
-                                : GL_LINE); // Váltogassuk FILL és LINE között!
+                                : GL_LINE);  // Váltogassuk FILL és LINE között!
       // https://registry.khronos.org/OpenGL-Refpages/gl4/html/glPolygonMode.xhtml
       glPolygonMode(GL_FRONT_AND_BACK,
-                    polygonMode); // Állítsuk be az újat!
+                    polygonMode);  // Állítsuk be az újat!
     }
   }
   m_camera.KeyboardDown(key);

@@ -45,6 +45,18 @@
     <ClCompile Include="includes\FallingObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cpunbody\BoundingBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpunbody\Nbody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpunbody\Octree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpunbody\Octreostream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -66,6 +78,24 @@
       <Filter>GL Utils</Filter>
     </ClInclude>
     <ClInclude Include="includes\FallingObject.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\BoundingBox.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\Mutex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\Nbody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\Octree.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\Particle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="includes\SUpdateInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -146,5 +176,6 @@
     <None Include="shaders\Vert_TP.vert" />
     <None Include="shaders\Vert_traj.vert" />
     <None Include="imgui.ini" />
+    <None Include="shaders\Vert_Point.vert" />
   </ItemGroup>
 </Project>

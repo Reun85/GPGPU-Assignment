@@ -2,54 +2,43 @@
 
 #include <filesystem>
 #include <fstream>
-#include <vector>
-#include <unordered_map>
 #include <functional>
+#include <unordered_map>
+#include <vector>
 
 #include "GLUtils.hpp"
 
+class ObjParser {
+ public:
+  typedef MeshObject<Vertex> Mesh;
 
-class ObjParser
-{
-public:
+  static Mesh parse(const std::filesystem::path& fileName);
 
-	typedef MeshObject<Vertex> Mesh;
+  enum Exception { EXC_FILENOTFOUND };
 
-	static Mesh parse(const std::filesystem::path& fileName);
+ private:
+  struct IndexedVert {
+    union {
+      struct {
+        uint32_t v, vt;
+      };
+      uint64_t v_vt = 0Ul;
+    };
 
-	enum Exception { EXC_FILENOTFOUND };
+    union {
+      struct {
+        uint32_t dummy;
+        uint32_t vn;
+      };
+      uint64_t vn_64 = 0Ul;
+    };
 
-private:
-	struct IndexedVert
-	{
-		union
-		{
-			struct
-			{
-				uint32_t v,vt;
-			};
-			uint64_t v_vt = 0Ul;
-		}; 
+    inline bool operator==(const IndexedVert& other) const {
+      return this->v_vt == other.v_vt && this->vn == other.vn;
+    }
+  };
 
-		union
-		{
-			struct
-			{
-				uint32_t dummy;
-				uint32_t vn;
-			};
-			uint64_t vn_64 = 0Ul;
-		}; 
-		
-		inline bool operator==( const IndexedVert& other ) const
-		{
-			return this->v_vt == other.v_vt && this->vn == other.vn;
-		}
-
-	};
-
-	struct IndexedVertHash
-	{
-		std::size_t operator()( const IndexedVert& iv ) const noexcept;
-	};
+  struct IndexedVertHash {
+    std::size_t operator()(const IndexedVert& iv) const noexcept;
+  };
 };

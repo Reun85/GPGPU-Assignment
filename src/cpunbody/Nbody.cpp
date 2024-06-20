@@ -5,10 +5,12 @@
 #include <iostream>
 #include <random>
 
-#include "cpunbody/Octree.h"
-
-std::vector<Particle> DefaultLayout::Generate(const size_t size) {
-  std::vector<Particle> particles;
+#include "BarnesHut.h"
+#include "Octree.h"
+#include "Vec3.hpp"
+ParticlePair UniformLayout(const size_t size) {
+  std::vector<ParticlePos> particles;
+  std::vector<ParticleData> particle_data(size);
   particles.reserve(size);
 
   std::default_random_engine generator;
@@ -18,68 +20,57 @@ std::vector<Particle> DefaultLayout::Generate(const size_t size) {
     float x = distribution(generator);
     float y = distribution(generator);
     float z = distribution(generator);
-    particles.emplace_back(
-        Particle{glm::vec3(x, y, z), glm::vec3(0), glm::vec3(0)});
+	particles.emplace_back(ParticlePos{vec3(x, y,z)});
   }
 
-  return particles;
+  return std::make_pair(particles, particle_data);
 }
 
-std::vector<Particle> EvenLayout::Generate(const size_t count) {
-  std::vector<Particle> particles;
+ParticlePair EvenLayout(const size_t count) {
+  std::vector<ParticlePos> particles;
+  std::vector<ParticleData> particle_data(count);
   const int num = std::ceil((std::cbrt(static_cast<float>(count)) - 1.) / 2.);
-  const size_t res = std::pow(num * 2 + 1, 3);
+  const size_t res = static_cast<size_t>(std::pow(num * 2 + 1, 3));
   std::cerr << "number of particles:" << res << std::endl;
 
   particles.reserve(res);
-  glm::vec3 offset(0.f, 0.f, 0.f);
-  glm::vec3 size(1.f, 1.f, 1.f);
+  vec3 offset(0.f, 0.f, 0.f);
+  vec3 size(1.f, 1.f, 1.f);
   for (int i = -num; i <= num; i++) {
     for (int j = -num; j <= num; j++) {
       for (int k = -num; k <= num; k++) {
-        glm::vec3 pos = offset + size * glm::vec3(static_cast<float>(i),
-                                                  static_cast<float>(j),
-                                                  static_cast<float>(k));
-        particles.emplace_back(Particle{pos, {}, {}});
+        vec3 pos =
+            offset + size * vec3(static_cast<float>(i), static_cast<float>(j),
+                                 static_cast<float>(k));
+        particles.emplace_back(ParticlePos{pos});
       }
     }
   }
-  return particles;
+  return std::make_pair(particles, particle_data);
 }
 
+NBody::NBody(const size_t size,std::function<ParticlePair(const size_t)> fun) {
+  ParticlePair particles = fun(size);
+
+
+
+    m_particles_pos = particles.first;
+  m_particles_data = particles.second;
+
+ m_particles_pos.emplace_back(vec3(-10.f, -10.f, -10.f));
+  m_particles_data.emplace_back(1000000.0f);
+      Init();
+}
 NBody::~NBody() {}
 
-void NBody::Init() {
-  BoundingBox bb(m_particles);
-  Octree oc(m_particles);
-  std::cout << oc << std::endl;
-}
+void NBody::Init() {}
 void NBody::Clean() {}
 
-void NBody::Update(const SUpdateInfo&) {}
+void NBody::Update() {
+  Octree oc(m_particles_pos, m_particles_data);
 
-int testNBody() {
-  std::vector<Particle> particles;
-  static constexpr int num = 4;
-  static const size_t res = std::pow(num * 2 + 1, 3);
-  std::cerr << "number of particles:" << res << std::endl;
-
-  particles.reserve(res);
-  glm::vec3 offset(0.f, 0.f, 0.f);
-  glm::vec3 size(1.f, 1.f, 1.f);
-  for (int i = -num; i <= num; i++) {
-    for (int j = -num; j <= num; j++) {
-      for (int k = -num; k <= num; k++) {
-        glm::vec3 pos = offset + size * glm::vec3(static_cast<float>(i),
-                                                  static_cast<float>(j),
-                                                  static_cast<float>(k));
-        particles.emplace_back(Particle{pos, {}, {}});
-      }
-    }
-  }
-  BoundingBox bb(particles);
-  Octree oc(particles);
-  std::cout << oc << std::endl;
-
-  return 1;
+  BarnesHut(m_particles_pos, m_particles_data, oc, m_timer, m_writing_mutex);
+  std::lock_guard<std::mutex> done_guard(m_done_mutex);
+  m_newdata = true;
+  //std::cout << oc << std::endl;
 }

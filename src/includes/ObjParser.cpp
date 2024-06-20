@@ -170,7 +170,6 @@ ObjParser::Mesh ObjParser::parse(const std::filesystem::path &fileName) {
       std::from_chars(coordT.data(), coordT.data() + coordT.size(), y);
       coordT = tokenizer.NextToken();
       std::from_chars(coordT.data(), coordT.data() + coordT.size(), z);
-
     } break;
     case From2Char('v', 't'): // vt <s> <t>
     {
@@ -183,7 +182,6 @@ ObjParser::Mesh ObjParser::parse(const std::filesystem::path &fileName) {
       std::from_chars(coordT.data(), coordT.data() + coordT.size(), s);
       coordT = tokenizer.NextToken();
       std::from_chars(coordT.data(), coordT.data() + coordT.size(), t);
-
     } break;
     case From2Char('f', ' '):
     case From2Char('f', '\t'): // f (<pi>[/<ti>][/<ni>])3+
@@ -525,7 +523,6 @@ triangulatePolygon(const std::vector<glm::vec2> &polygon) {
 
       return false;
     }
-
   } triangulation;
   triangulation.triIdxList.reserve(polygon.size() * 3 - 6);
 

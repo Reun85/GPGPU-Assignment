@@ -7,7 +7,7 @@
 
 #include <SDL2/SDL_image.h>
 
-/* 
+/*
 
 Az http://www.opengl-tutorial.org/ oldal alapján.
 
@@ -73,12 +73,11 @@ void compileShaderFromSource( const GLuint loadedShader, std::string_view shader
 		std::string ErrorMessage(infoLogLength,'\0');
 		glGetShaderInfoLog(loadedShader, infoLogLength, NULL, ErrorMessage.data());
 
-		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR, 
+		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR,
 						( result ) ? SDL_LOG_PRIORITY_WARN : SDL_LOG_PRIORITY_ERROR,
 						"[glLinkProgram] Shader compile error: %s" , ErrorMessage.data() );
 	}
 }
-
 
 void AssembleProgram( const GLuint programID, const std::filesystem::path& vs_filename, const std::filesystem::path& fs_filename )
 {
@@ -115,7 +114,7 @@ void AssembleProgram( const GLuint programID, const std::filesystem::path& vs_fi
 	{
 		std::string ErrorMessage(infoLogLength, '\0');
 		glGetProgramInfoLog(programID, infoLogLength, nullptr, ErrorMessage.data() );
-		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR, 
+		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR,
 						( result ) ? SDL_LOG_PRIORITY_WARN : SDL_LOG_PRIORITY_ERROR,
 						"[glLinkProgram] Shader linking error: %s" , ErrorMessage.data() );
 	}
@@ -149,7 +148,7 @@ void TextureFromFile( const GLuint tex, const std::filesystem::path& fileName, G
 {
 	if ( tex == 0 )
 	{
-		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR, 
+		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR,
 						SDL_LOG_PRIORITY_ERROR,
 						"Texture object needs to be inited before loading %s !", fileName.string().c_str());
 		return;
@@ -160,7 +159,7 @@ void TextureFromFile( const GLuint tex, const std::filesystem::path& fileName, G
 
 	if (loaded_img == nullptr)
 	{
-		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR, 
+		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR,
 						SDL_LOG_PRIORITY_ERROR,
 						"[TextureFromFile] Error while loading texture: %s", fileName.string().c_str());
 		return;
@@ -178,7 +177,7 @@ void TextureFromFile( const GLuint tex, const std::filesystem::path& fileName, G
 	SDL_FreeSurface(loaded_img);
 	if (formattedSurf == nullptr)
 	{
-		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR, 
+		SDL_LogMessage( SDL_LOG_CATEGORY_ERROR,
 						SDL_LOG_PRIORITY_ERROR,
 						"[TextureFromFile] Error while processing texture");
 		return;

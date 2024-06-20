@@ -16,9 +16,19 @@
 
 #include "MyApp.h"
 #include "cpunbody/Nbody.h"
+
+void SecondThreadFunction(NBody& body, bool* quit) {
+    
+  while (!(*quit)) {
+    body.Update();
+  }
+  std::cout << "Other thread stopping" << std::endl;
+}
+
+static const int PARTICLE_SIZE = 10000;
+
+
 int main(int argc, char* args[]) {
-  NBody nbody(1000);
-  std::exit(0);
   //
   // 1. lépés: inicializáljuk az SDL-t
   //
@@ -85,7 +95,7 @@ int main(int argc, char* args[]) {
       800,  // ablak szélessége
       600,  // és magassága
       SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
-          SDL_WINDOW_RESIZABLE);  // megjelenítési tulajdonságok
+          SDL_WINDOW_RESIZABLE|SDL_WINDOW_MAXIMIZED);  // megjelenítési tulajdonságok
 
   // ha nem sikerült létrehozni az ablakot, akkor írjuk ki a hibát, amit kaptunk
   // és lépjünk ki
@@ -153,6 +163,9 @@ int main(int argc, char* args[]) {
 
   ImGui_ImplSDL2_InitForOpenGL(win, context);
   ImGui_ImplOpenGL3_Init();
+  // Create NBody Simulation
+
+  NBody nbody(PARTICLE_SIZE);
 
   //
   // 4. lépés: indítsuk el a fő üzenetfeldolgozó ciklust
@@ -164,7 +177,7 @@ int main(int argc, char* args[]) {
     SDL_Event ev;
 
     // alkalmazás példánya
-    CMyApp app;
+    CMyApp app(PARTICLE_SIZE);
     if (!app.Init()) {
       SDL_GL_DeleteContext(context);
       SDL_DestroyWindow(win);
@@ -173,6 +186,8 @@ int main(int argc, char* args[]) {
           "[app.Init] Error during the initialization of the application!");
       return 1;
     }
+
+     std::thread t(SecondThreadFunction,std::ref(nbody),&quit);
 
     while (!quit) {
       // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
@@ -246,6 +261,14 @@ int main(int argc, char* args[]) {
            static_cast<float>(CurrentTick - LastTick) / 1000.0f};
       LastTick = CurrentTick;  // Mentsük el utolsóként az aktuális "tick"-et!
 
+      {
+        MyMutex* particles = nbody.GetNewData();
+        if (particles) {
+          std::cout << "UPDATED!"<<std::endl;
+          app.SetParticles(particles->data);
+          delete particles;
+        }
+      }
       app.Update(updateInfo);
       app.Render();
 
@@ -263,6 +286,7 @@ int main(int argc, char* args[]) {
 
     // takarítson el maga után az objektumunk
     app.Clean();
+     t.join();
   }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU
      // erőforrásokat befoglaló osztályok destruktorai is itt futnak le
 

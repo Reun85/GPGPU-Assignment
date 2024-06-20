@@ -22,11 +22,21 @@ std::ostream &operator<<(std::ostream &os,
   }
   os << InsertTabs(current->depth) << "Node:"
      << "\n"
-     << InsertTabs(current->depth) << "center: " << Vec3<float>(current->center)
+     << InsertTabs(current->depth) << "depth: " << current->depth
      << "\n"
-     << InsertTabs(current->depth) << "size: " << Vec3<float>(current->size)
+     << InsertTabs(current->depth) << "center: " << current->center
      << "\n"
-     << InsertTabs(current->depth) << "children: " << std::endl;
+     << InsertTabs(current->depth) << "size: " << current->size
+     << "\n"
+     << InsertTabs(current->depth) << "other: centerOfMass" <<
+     current->inner->m_center_of_mass
+     << "\n"
+     << InsertTabs(current->depth) << "Mass: "
+     << current->inner->m_mass
+     << "\n"
+     << InsertTabs(current->depth) << "children: "
+     << std::endl;
+
   current->user.printed = true;
 
   return os;
@@ -44,17 +54,8 @@ std::ostream &operator<<(std::ostream &os, const Octree &octree) {
 
             if (current->inner->m_particle != nullptr) {
               os << current;
-              os << InsertTabs(current->depth + 1) << "Particle: "
-                 << Vec3<float>(current->inner->m_particle->m_position)
-                 << std::endl;
-            }
-            break;
-          case CombinedLeaf:
-            if (current->inner->m_particle != nullptr) {
-              os << current;
-              os << InsertTabs(current->depth + 1) << "CombinedParticle: "
-                 << Vec3<float>(current->inner->m_combined.m_position)
-                 << ", count: " << current->inner->m_combined.m_count
+              os << InsertTabs(current->depth + 1)
+                 << "Particle: " << Vec3<float>(*current->inner->m_particle)
                  << std::endl;
             }
             break;

@@ -14,12 +14,15 @@
 #include <SDL2/SDL_opengl.h>
 
 // Utils
+#include <vector>
+
 #include "Camera.h"
 #include "SUpdateInfo.h"
+#include "cpunbody/Vec3.hpp"
 
 class CMyApp {
-public:
-  CMyApp();
+ public:
+  CMyApp(int PARTICLE_SIZE);
   ~CMyApp();
 
   bool Init();
@@ -37,11 +40,14 @@ public:
   void MouseWheel(const SDL_MouseWheelEvent &);
   void Resize(int, int);
 
-protected:
+  void SetParticles(const std::vector<vec3> &particles);
+
+ protected:
   void SetupDebugCallback();
 
   // ── Data ────────────────────────────────────────────────────────────
   float m_ElapsedTimeInSec = 0.0f;
+  size_t count = 0;
 
   // ── Camera ──────────────────────────────────────────────────────────
   Camera m_camera;
@@ -52,6 +58,9 @@ protected:
 
   /// Uniform location
   GLint ul(const char *uniformName) noexcept;
+
+  GLuint VAO=0;
+  GLuint VBO=0;
 
   GLuint m_programID = 0;
   GLuint m_programPointID = 0;

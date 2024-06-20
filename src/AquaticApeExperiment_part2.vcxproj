@@ -58,7 +58,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>SDL_MAIN_HANDLED;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -82,7 +82,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="includes\FallingObject.cpp" />
+    <ClCompile Include="cpunbody\BarnesHut.cpp" />
+    <ClCompile Include="cpunbody\BoundingBox.cpp" />
+    <ClCompile Include="cpunbody\Nbody.cpp" />
+    <ClCompile Include="cpunbody\Octree.cpp" />
+    <ClCompile Include="cpunbody\Octreostream.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="includes\SDL_GLDebugMessageCallback.cpp" />
     <ClCompile Include="main.cpp" />
@@ -91,7 +95,14 @@
     <ClCompile Include="includes\ObjParser.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cpunbody\BarnesHut.h" />
+    <ClInclude Include="cpunbody\BoundingBox.h" />
+    <ClInclude Include="cpunbody\Nbody.h" />
+    <ClInclude Include="cpunbody\Octree.h" />
+    <ClInclude Include="cpunbody\Particle.h" />
+    <ClInclude Include="cpunbody\Vec3.hpp" />
     <ClInclude Include="includes\FallingObject.h" />
+    <ClInclude Include="includes\SUpdateInfo.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />
@@ -100,48 +111,16 @@
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Assets\Suzanne.obj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Assets\grid.jpg" />
-    <Image Include="Assets\hat.jpg" />
-    <Image Include="Assets\table.jpg" />
-    <Image Include="Assets\wall.png" />
-    <Image Include="Assets\wood.jpg" />
-    <Image Include="Assets\zpos.png" />
-    <Image Include="Assets\xneg.png" />
-    <Image Include="Assets\xpos.png" />
-    <Image Include="Assets\yneg.png" />
-    <Image Include="Assets\ypos.png" />
-    <Image Include="Assets\zneg.png" />
-    <Image Include="Assets\water_texture.jpg" />
-    <Image Include="Assets\danger_glass.png" />
-    <Image Include="Assets\lab_xneg.png" />
-    <Image Include="Assets\lab_xpos.png" />
-    <Image Include="Assets\lab_yneg.png" />
-    <Image Include="Assets\lab_ypos.png" />
-    <Image Include="Assets\lab_zneg.png" />
-    <Image Include="Assets\lab_zpos.png" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="imgui.ini" />
     <None Include="shaders\Frag_Lighting.frag" />
     <None Include="shaders\Frag_PosCol.frag" />
     <None Include="shaders\Frag_skybox.frag" />
-    <None Include="shaders\Frag_TP.frag" />
     <None Include="shaders\Vert_axes.vert" />
+    <None Include="shaders\Vert_Point.vert" />
     <None Include="shaders\Vert_PosNormTex.vert" />
     <None Include="shaders\Vert_skybox.vert" />
-    <None Include="shaders\Vert_TP.vert" />
     <None Include="shaders\Vert_traj.vert" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Assets\hardhat.obj">
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="Assets\table.obj">
-      <FileType>Document</FileType>
-    </Text>
+    <None Include="shaders\Frag_axes.frag" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
