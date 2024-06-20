@@ -38,11 +38,26 @@ std::ostream &operator<<(std::ostream &os, const Octree &octree) {
 
   octree.DepthFirstTravel<UserInfo>(
       [&os](std::shared_ptr<NodeWithExtraInfo<UserInfo>> current) {
-        if (current->inner->m_particle != nullptr) {
-          os << current;
-          os << InsertTabs(current->depth + 1) << "Particle: "
-             << Vec3<float>(current->inner->m_particle->m_position)
-             << std::endl;
+        switch (current->inner->m_data_type) {
+          case Parent:
+          case Leaf:
+
+            if (current->inner->m_particle != nullptr) {
+              os << current;
+              os << InsertTabs(current->depth + 1) << "Particle: "
+                 << Vec3<float>(current->inner->m_particle->m_position)
+                 << std::endl;
+            }
+            break;
+          case CombinedLeaf:
+            if (current->inner->m_particle != nullptr) {
+              os << current;
+              os << InsertTabs(current->depth + 1) << "CombinedParticle: "
+                 << Vec3<float>(current->inner->m_combined.m_position)
+                 << ", count: " << current->inner->m_combined.m_count
+                 << std::endl;
+            }
+            break;
         }
       });
 

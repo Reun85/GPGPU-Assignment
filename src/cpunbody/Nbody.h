@@ -12,6 +12,10 @@
 #include "Particle.h"
 #include "SUpdateInfo.h"
 
+struct EvenLayout {
+ public:
+  static std::vector<Particle> Generate(const size_t size);
+};
 struct DefaultLayout {
  public:
   static std::vector<Particle> Generate(const size_t size);
@@ -19,7 +23,7 @@ struct DefaultLayout {
 
 class NBody {
  public:
-  template <typename T = DefaultLayout>
+  template <typename T = EvenLayout>
   NBody(const size_t size);
   ~NBody();
 

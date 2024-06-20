@@ -40,6 +40,34 @@ std::ostream &operator<<(std::ostream &os, const Vec3<T> &vec) {
   os << "(" << vec.x << "," << vec.y << "," << vec.z << ")";
   return os;
 }
+enum NodeDataType {
+  /// It has children
+  Parent,
+  /// It has a single particle inside
+  Leaf,
+  /// It has two or more combined particles. Treat it as a single particle
+  CombinedLeaf
+};
+
+struct CombinedParticles {
+  glm::vec3 m_position;
+  /// doubles as mass
+  int m_count;
+
+ public:
+  inline CombinedParticles() : m_position(0), m_count(0) {}
+  inline CombinedParticles(const Particle &p)
+      : m_position(p.m_position), m_count(1) {}
+  inline void End() { m_position /= m_count; }
+  inline void Add(const glm::vec3 &Pos) {
+    m_position += Pos;
+    m_count++;
+  }
+  inline void Add(const Particle &p) {
+    m_position += p.m_position;
+    m_count++;
+  }
+};
 class Node {
  public:
   static const std::array<glm::vec3, 8> OFFSETS;
@@ -54,8 +82,9 @@ class Node {
     */
     Node *m_children[8];
     Particle *m_particle = nullptr;
+    CombinedParticles m_combined;
   };
-  bool m_is_leaf = true;
+  NodeDataType m_data_type = NodeDataType::Leaf;
 };
 
 /// Default is bool to have as little size as possible.
@@ -77,6 +106,9 @@ class Octree {
  public:
   // The default times it is cut before injecting elements
   static constexpr size_t START_DEPTH = 4;
+  // After reaching this depth, it will just combine the particles.
+  static constexpr size_t MAX_DEPTH = 20;
+  static_assert(MAX_DEPTH > START_DEPTH);
   Node *m_root;
   BoundingBox m_bb;
   Octree(std::vector<Particle> &particles);
@@ -111,7 +143,7 @@ void Octree::DepthFirstTravel(
   while (!stack.empty()) {
     MS current = stack.back();
     stack.pop_back();
-    if (!current->inner->m_is_leaf) {
+    if (current->inner->m_data_type == NodeDataType::Parent) {
       glm::vec3 currsize = 0.5f * current->size;
       for (int i = 0; i < 8; i++) {
         glm::vec3 currcenter = current->center + (currsize * Node::OFFSETS[i]);
@@ -123,7 +155,7 @@ void Octree::DepthFirstTravel(
       }
     } else {
       if (onlyOnLeaves) {
-        if (current->inner->m_is_leaf) {
+        if (current->inner->m_data_type == NodeDataType::Leaf) {
           fun(current);
         }
       } else

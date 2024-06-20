@@ -53,7 +53,7 @@ Octree::Octree(std::vector<Particle> &particles)
         current->m_children[k] = &m_nodes[itr];
         itr++;
       }
-      current->m_is_leaf = false;
+      current->m_data_type = NodeDataType::Parent;
     }
     start_ind = end_ind;
     end_ind = itr;
@@ -74,7 +74,7 @@ Octree::Octree(std::vector<Particle> &particles)
         current->m_children[k] = &m_nodes[end_ind + index];
         id++;
       }
-      current->m_is_leaf = false;
+      current->m_data_type = NodeDataType::Parent;
     }
     start_ind = end_ind;
     itr_start = id + end_ind;
@@ -131,9 +131,9 @@ void Octree::Recalculate(std::vector<Particle> &particles) {
                     current_block_center + current_block_size, particle_pos)) {
         done = true;
       }
-      if (!done) {
-      }
+      int depth = START_DEPTH - 1;
       while (!done) {
+        depth += 1;
         glm::vec3 octant =
             glm::vec3(particle_pos.x > current_block_center.x ? 1 : -1,
                       particle_pos.y > current_block_center.y ? 1 : -1,
@@ -143,16 +143,16 @@ void Octree::Recalculate(std::vector<Particle> &particles) {
                     (particle_pos.y > current_block_center.y ? 2 : 0) +
                     (particle_pos.z > current_block_center.z ? 4 : 0);
 
-        if (current->m_is_leaf) {
+        if (current->m_data_type == NodeDataType::Leaf) {
           // If it is a leaf
           if (current->m_particle == nullptr) {
             // If it is empty
             current->m_particle = particle;
             // This is default
-            current->m_is_leaf = true;
+            current->m_data_type = NodeDataType::Leaf;
             done = true;
           } else {
-            current->m_is_leaf = false;
+            current->m_data_type = NodeDataType::Parent;
             // If it is not empty
             Particle *tmpparticle = current->m_particle;
             glm::vec3 prev_particle_pos = tmpparticle->m_position;
@@ -172,7 +172,7 @@ void Octree::Recalculate(std::vector<Particle> &particles) {
             }
             Node *new_node_for_prev = current->m_children[prev_index];
             // This is default
-            new_node_for_prev->m_is_leaf = true;
+            new_node_for_prev->m_data_type = NodeDataType::Leaf;
             new_node_for_prev->m_particle = tmpparticle;
 
             current_block_size /= 2.0f;
