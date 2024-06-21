@@ -35,7 +35,6 @@ bool isinside(vec3 inclusivemin, vec3 exclusivemax, vec3 inp) {
          vec3::max(exclusivemax, inp) == exclusivemax;
 }
 
-void debug_TEST();
 
 Octree::Octree(std::vector<ParticlePos> &particles,
                std::vector<ParticleData> &particle_data)
@@ -171,19 +170,7 @@ void Octree::Recalculate(std::vector<ParticlePos> &particles,
                     current_block_center + current_block_size, particle_pos)) {
         done = true;
       }
-      // int depth = START_DEPTH - 1;
       while (!done) {
-        // depth += 1;
-        // if (depth > 7) std::cout << "PROBLEM: ";
-        // if (depth > 1) {
-        //   std::cout << particle->m_position << " and "
-        //             << (current->m_particle ?
-        //             &current->m_particle->m_position : (vec3*)nullptr)<< "
-        //             center? "
-        //             << current_block_center << " size "<<current_block_size
-        //             << std::endl;
-        //
-        // }
         //  Adjust data for node
         current->m_mass += particle_data->m_mass;
         current->m_center_of_mass += *particle * particle_data->m_mass;
@@ -272,23 +259,4 @@ void Octree::Recalculate(std::vector<ParticlePos> &particles,
   }
   // std::cerr << "Allocated blocks: " << m_nodes.size() << "\nUsed: " << itr
   //           << std::endl;
-}
-
-void debug_TEST() {
-  // std::vector<Vec3<size_t>> strides = {
-  //     {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 0},
-  //     {0, 0, 1}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1},
-  // };
-  // Vec3<size_t> start = {0, 0, 0};
-  // for (size_t id = 0; id < std::pow(8, Octree::START_DEPTH); id++) {
-  //   Vec3 correct = start + strides[id % 8] + strides[(id / 8) % 8] * 2 +
-  //                  strides[(id / 64) % 8] * 4;
-  //   Vec3 got = getIJK(id, Octree::START_DEPTH);
-  //
-  //   if (!(correct == got)) {
-  //     std::cout << "\tBAD id: " << id << " correct: " << correct
-  //               << " got: " << got << std::endl;
-  //     assert(false);
-  //   }
-  // }
 }

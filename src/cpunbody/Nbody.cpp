@@ -14,7 +14,7 @@ ParticlePair UniformLayout(const size_t size) {
   particles.reserve(size);
 
   std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0, 2.0);
+  std::normal_distribution<float> distribution(0.0, 1.0);
 
   for (size_t i = 0; i < size; ++i) {
     float x = distribution(generator);
@@ -55,10 +55,9 @@ NBody::NBody(const size_t size,std::function<ParticlePair(const size_t)> fun) {
 
 
     m_particles_pos = particles.first;
-  m_particles_data = particles.second;
-
- m_particles_pos.emplace_back(vec3(-10.f, -10.f, -10.f));
-  m_particles_data.emplace_back(1000000.0f);
+    m_particles_data = particles.second;
+    m_particles_pos[0] = vec3(-5.f, -5.f, -5.f);
+    m_particles_data[0] = ParticleData(1e+11);
       Init();
 }
 NBody::~NBody() {}
@@ -72,5 +71,4 @@ void NBody::Update() {
   BarnesHut(m_particles_pos, m_particles_data, oc, m_timer, m_writing_mutex);
   std::lock_guard<std::mutex> done_guard(m_done_mutex);
   m_newdata = true;
-  //std::cout << oc << std::endl;
 }

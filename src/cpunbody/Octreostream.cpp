@@ -22,20 +22,13 @@ std::ostream &operator<<(std::ostream &os,
   }
   os << InsertTabs(current->depth) << "Node:"
      << "\n"
-     << InsertTabs(current->depth) << "depth: " << current->depth
-     << "\n"
-     << InsertTabs(current->depth) << "center: " << current->center
-     << "\n"
-     << InsertTabs(current->depth) << "size: " << current->size
-     << "\n"
-     << InsertTabs(current->depth) << "other: centerOfMass" <<
-     current->inner->m_center_of_mass
-     << "\n"
-     << InsertTabs(current->depth) << "Mass: "
-     << current->inner->m_mass
-     << "\n"
-     << InsertTabs(current->depth) << "children: "
-     << std::endl;
+     << InsertTabs(current->depth) << "depth: " << current->depth << "\n"
+     << InsertTabs(current->depth) << "center: " << current->center << "\n"
+     << InsertTabs(current->depth) << "size: " << current->size << "\n"
+     << InsertTabs(current->depth) << "other: centerOfMass"
+     << current->inner->m_center_of_mass << "\n"
+     << InsertTabs(current->depth) << "Mass: " << current->inner->m_mass << "\n"
+     << InsertTabs(current->depth) << "children: " << std::endl;
 
   current->user.printed = true;
 

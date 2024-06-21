@@ -1,24 +1,24 @@
 #include "ObjParser.h"
+
 #include <algorithm>
 #include <array>
 #include <charconv>
-#include <list>
-#include <string>
-
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/norm.hpp>
+#include <list>
+#include <string>
 
 using namespace std;
 
 class InMemoryTokenizer {
-public:
+ public:
   InMemoryTokenizer() = default;
   void SetData(const char *ptr, size_t Length) noexcept;
   std::string_view NextToken(bool onlySameLine = false) noexcept;
   void ToNextLine() noexcept;
   operator bool() const noexcept;
 
-private:
+ private:
   const char *currentPtr = nullptr;
   const char *endPtr = nullptr;
 };
@@ -49,8 +49,7 @@ std::string_view InMemoryTokenizer::NextToken(bool onlySameLine) noexcept {
 }
 
 void InMemoryTokenizer::ToNextLine() noexcept {
-  while (currentPtr < endPtr && *currentPtr != '\n')
-    currentPtr++;
+  while (currentPtr < endPtr && *currentPtr != '\n') currentPtr++;
   currentPtr++;
 }
 
@@ -65,8 +64,8 @@ constexpr unsigned short From2Char(const char ch1, const char ch2) {
   return sh;
 }
 
-static std::vector<unsigned int>
-triangulatePolygon(const std::vector<glm::vec2> &);
+static std::vector<unsigned int> triangulatePolygon(
+    const std::vector<glm::vec2> &);
 
 ObjParser::Mesh ObjParser::parse(const std::filesystem::path &fileName) {
   Mesh resultMesh;
@@ -83,15 +82,13 @@ ObjParser::Mesh ObjParser::parse(const std::filesystem::path &fileName) {
   std::error_code ec;
   std::size_t fileSize = std::filesystem::file_size(fileName, ec);
 
-  if (ec)
-    throw(EXC_FILENOTFOUND);
+  if (ec) throw(EXC_FILENOTFOUND);
 
   std::vector<char> objRawData(fileSize);
 
   std::ifstream objFileStrm(fileName, std::ios::binary);
 
-  if (!objFileStrm)
-    throw(EXC_FILENOTFOUND);
+  if (!objFileStrm) throw(EXC_FILENOTFOUND);
 
   objFileStrm.read(objRawData.data(), fileSize);
 
@@ -110,337 +107,342 @@ ObjParser::Mesh ObjParser::parse(const std::filesystem::path &fileName) {
     }
 
     switch (*reinterpret_cast<const unsigned short *>(token.data())) {
-    case From2Char('m', 't'): // mtllib <.mtl file>
-    {
-      auto mtlFile = tokenizer.NextToken();
-    } break;
+      case From2Char('m', 't'):  // mtllib <.mtl file>
+      {
+        auto mtlFile = tokenizer.NextToken();
+      } break;
 
-    case From2Char('u', 's'): // usemtl <material name>
-    {
-      auto mtlName = tokenizer.NextToken();
-    } break;
+      case From2Char('u', 's'):  // usemtl <material name>
+      {
+        auto mtlName = tokenizer.NextToken();
+      } break;
 
-    case From2Char('o', ' '):
-    case From2Char('o', '\t'): // o <object name>
-    {
-      auto objectName = tokenizer.NextToken();
-    } break;
+      case From2Char('o', ' '):
+      case From2Char('o', '\t'):  // o <object name>
+      {
+        auto objectName = tokenizer.NextToken();
+      } break;
 
-    case From2Char('g', ' '):
-    case From2Char('g', '\t'): // g <group name>
-    {
-      auto groupName = tokenizer.NextToken();
-    } break;
-    case From2Char('v', ' '):
-    case From2Char('v', '\t'): // v <x> <y> <z> [<w>]
-    {
-      positions.emplace_back(glm::vec3());
+      case From2Char('g', ' '):
+      case From2Char('g', '\t'):  // g <group name>
+      {
+        auto groupName = tokenizer.NextToken();
+      } break;
+      case From2Char('v', ' '):
+      case From2Char('v', '\t'):  // v <x> <y> <z> [<w>]
+      {
+        positions.emplace_back(glm::vec3());
 
-      float &x = positions.back().x;
-      float &y = positions.back().y;
-      float &z = positions.back().z;
+        float &x = positions.back().x;
+        float &y = positions.back().y;
+        float &z = positions.back().z;
 
-      std::string_view coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), x);
-      coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), y);
-      coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), z);
-      coordT = tokenizer.NextToken(true);
+        std::string_view coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), x);
+        coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), y);
+        coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), z);
+        coordT = tokenizer.NextToken(true);
 
-      if (!coordT.empty()) {
-        float w;
-        std::from_chars(coordT.data(), coordT.data() + coordT.size(), w);
-        x /= w;
-        y /= w;
-        z /= w;
-      }
-    } break;
-    case From2Char('v', 'n'): // vn <nx> <ny> <nz>
-    {
-      normals.emplace_back(glm::vec3());
+        if (!coordT.empty()) {
+          float w;
+          std::from_chars(coordT.data(), coordT.data() + coordT.size(), w);
+          x /= w;
+          y /= w;
+          z /= w;
+        }
+      } break;
+      case From2Char('v', 'n'):  // vn <nx> <ny> <nz>
+      {
+        normals.emplace_back(glm::vec3());
 
-      float &x = normals.back().x;
-      float &y = normals.back().y;
-      float &z = normals.back().z;
+        float &x = normals.back().x;
+        float &y = normals.back().y;
+        float &z = normals.back().z;
 
-      std::string_view coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), x);
-      coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), y);
-      coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), z);
-    } break;
-    case From2Char('v', 't'): // vt <s> <t>
-    {
-      texcoords.emplace_back(glm::vec2());
+        std::string_view coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), x);
+        coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), y);
+        coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), z);
+      } break;
+      case From2Char('v', 't'):  // vt <s> <t>
+      {
+        texcoords.emplace_back(glm::vec2());
 
-      float &s = texcoords.back().x;
-      float &t = texcoords.back().y;
+        float &s = texcoords.back().x;
+        float &t = texcoords.back().y;
 
-      std::string_view coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), s);
-      coordT = tokenizer.NextToken();
-      std::from_chars(coordT.data(), coordT.data() + coordT.size(), t);
-    } break;
-    case From2Char('f', ' '):
-    case From2Char('f', '\t'): // f (<pi>[/<ti>][/<ni>])3+
-    {
-      face_vertIds.clear();
-      needsNormalComputation = false;
+        std::string_view coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), s);
+        coordT = tokenizer.NextToken();
+        std::from_chars(coordT.data(), coordT.data() + coordT.size(), t);
+      } break;
+      case From2Char('f', ' '):
+      case From2Char('f', '\t'):  // f (<pi>[/<ti>][/<ni>])3+
+      {
+        face_vertIds.clear();
+        needsNormalComputation = false;
 
-      std::string_view faceVertT = tokenizer.NextToken(true);
-      while (!faceVertT.empty()) {
-        face_vertIds.emplace_back(IndexedVert{});
-        IndexedVert &idxVert = face_vertIds.back();
+        std::string_view faceVertT = tokenizer.NextToken(true);
+        while (!faceVertT.empty()) {
+          face_vertIds.emplace_back(IndexedVert{});
+          IndexedVert &idxVert = face_vertIds.back();
 
-        size_t posEndOffs = faceVertT.find_first_of('/', 0);
-        if (posEndOffs == std::string_view::npos)
-          posEndOffs = faceVertT.size();
+          size_t posEndOffs = faceVertT.find_first_of('/', 0);
+          if (posEndOffs == std::string_view::npos)
+            posEndOffs = faceVertT.size();
 
-        std::from_chars(faceVertT.data(), faceVertT.data() + posEndOffs,
-                        idxVert.v);
-        idxVert.v--;
+          std::from_chars(faceVertT.data(), faceVertT.data() + posEndOffs,
+                          idxVert.v);
+          idxVert.v--;
 
-        size_t texStartOffs = posEndOffs + 1;
-        size_t texEndOffs = faceVertT.find_first_of('/', texStartOffs);
-        if (texEndOffs == std::string_view::npos)
-          texEndOffs = faceVertT.size();
-        if (texEndOffs > texStartOffs)
-          std::from_chars(faceVertT.data() + texStartOffs,
-                          faceVertT.data() + texEndOffs, idxVert.vt);
-        if (idxVert.vt)
-          idxVert.vt--;
-        size_t normStartOffs = texEndOffs + 1;
+          size_t texStartOffs = posEndOffs + 1;
+          size_t texEndOffs = faceVertT.find_first_of('/', texStartOffs);
+          if (texEndOffs == std::string_view::npos)
+            texEndOffs = faceVertT.size();
+          if (texEndOffs > texStartOffs)
+            std::from_chars(faceVertT.data() + texStartOffs,
+                            faceVertT.data() + texEndOffs, idxVert.vt);
+          if (idxVert.vt) idxVert.vt--;
+          size_t normStartOffs = texEndOffs + 1;
 
-        if (faceVertT.size() > normStartOffs) {
-          std::from_chars(faceVertT.data() + normStartOffs,
-                          faceVertT.data() + faceVertT.size(), idxVert.vn);
-          idxVert.vn--;
-        } else
-          needsNormalComputation = true;
+          if (faceVertT.size() > normStartOffs) {
+            std::from_chars(faceVertT.data() + normStartOffs,
+                            faceVertT.data() + faceVertT.size(), idxVert.vn);
+            idxVert.vn--;
+          } else
+            needsNormalComputation = true;
 
-        faceVertT = tokenizer.NextToken(true);
-      }
+          faceVertT = tokenizer.NextToken(true);
+        }
 
-      if (3 < face_vertIds.size()) {
-        std::vector<IndexedVert> face_vertIdsFace2Tris;
-        if (4 == face_vertIds.size()) {
-          glm::vec3 v10 =
-              positions[face_vertIds[0].v] - positions[face_vertIds[1].v];
-          glm::vec3 v12 =
-              positions[face_vertIds[2].v] - positions[face_vertIds[1].v];
+        if (3 < face_vertIds.size()) {
+          std::vector<IndexedVert> face_vertIdsFace2Tris;
+          if (4 == face_vertIds.size()) {
+            glm::vec3 v10 =
+                positions[face_vertIds[0].v] - positions[face_vertIds[1].v];
+            glm::vec3 v12 =
+                positions[face_vertIds[2].v] - positions[face_vertIds[1].v];
 
-          glm::vec3 v32 =
-              positions[face_vertIds[2].v] - positions[face_vertIds[3].v];
-          glm::vec3 v30 =
-              positions[face_vertIds[0].v] - positions[face_vertIds[3].v];
+            glm::vec3 v32 =
+                positions[face_vertIds[2].v] - positions[face_vertIds[3].v];
+            glm::vec3 v30 =
+                positions[face_vertIds[0].v] - positions[face_vertIds[3].v];
 
-          float angle_012 =
-              ::acosf(glm::dot(v10, v12) /
-                      sqrtf(glm::dot(v10, v10) * glm::dot(v12, v12)));
-          float angle_230 =
-              ::acosf(glm::dot(v32, v30) /
-                      sqrtf(glm::dot(v32, v32) * glm::dot(v30, v30)));
+            float angle_012 =
+                ::acosf(glm::dot(v10, v12) /
+                        sqrtf(glm::dot(v10, v10) * glm::dot(v12, v12)));
+            float angle_230 =
+                ::acosf(glm::dot(v32, v30) /
+                        sqrtf(glm::dot(v32, v32) * glm::dot(v30, v30)));
 
-          if ((angle_012 + angle_230) <= glm::pi<float>()) {
-            face_vertIdsFace2Tris = {face_vertIds[0], face_vertIds[1],
-                                     face_vertIds[2], face_vertIds[0],
-                                     face_vertIds[2], face_vertIds[3]};
+            if ((angle_012 + angle_230) <= glm::pi<float>()) {
+              face_vertIdsFace2Tris = {face_vertIds[0], face_vertIds[1],
+                                       face_vertIds[2], face_vertIds[0],
+                                       face_vertIds[2], face_vertIds[3]};
+            } else {
+              face_vertIdsFace2Tris = {face_vertIds[0], face_vertIds[1],
+                                       face_vertIds[3], face_vertIds[1],
+                                       face_vertIds[2], face_vertIds[3]};
+            }
           } else {
-            face_vertIdsFace2Tris = {face_vertIds[0], face_vertIds[1],
-                                     face_vertIds[3], face_vertIds[1],
-                                     face_vertIds[2], face_vertIds[3]};
+            // Calculate the best fitting plane
+            glm::vec3 MidPoint(0.0);
+            for (const auto &vertex : face_vertIds) {
+              MidPoint += positions[vertex.v];
+            }
+            MidPoint /= float(face_vertIds.size());
+
+            std::vector<glm::vec3> centeredPoints(face_vertIds.size());
+
+            std::transform(
+                face_vertIds.cbegin(), face_vertIds.cend(),
+                centeredPoints.begin(),
+                [&positions, MidPoint](const IndexedVert &faceV) -> glm::vec3 {
+                  return positions[faceV.v] - MidPoint;
+                });
+
+            float cov_xx = 0.0f, cov_xy = 0.0f;
+            float cov_yy = 0.0f, cov_yz = 0.0f;
+            float cov_xz = 0.0f, cov_zz = 0.0f;
+
+            for (const glm::vec3 &centeredP : centeredPoints) {
+              cov_xx += centeredP.x * centeredP.x;
+              cov_xy += centeredP.x * centeredP.y;
+
+              cov_yy += centeredP.y * centeredP.y;
+              cov_yz += centeredP.y * centeredP.z;
+
+              cov_xz += centeredP.x * centeredP.z;
+              cov_zz += centeredP.z * centeredP.z;
+            }
+
+            // viktor-vad: Very strange, but the pca.hpp and pca.inc disappeared
+            // from glm/gtx. Did not find any explanation for this. Instead of
+            // some header file copy-hacking, I implemented a 3x3 verion of
+            // eigen decomposition. It was not intended, but most likely it is
+            // faster than the original glm pca, since that is a general method
+            // with Housholder and QR.
+            // https://dl.acm.org/doi/epdf/10.1145/355578.366316
+            // https://en.wikipedia.org/wiki/Eigenvalue_algorithm#2%C3%972_matrices
+            glm::vec3 eigenVectors[2];
+            {
+              glm::vec3 eigenVectors_[3];
+              float p1 = cov_xy * cov_xy + cov_xz * cov_xz + cov_yz * cov_yz;
+              float trC = cov_xx + cov_yy + cov_zz;
+              float eig1 = 0.0f, eig2 = 0.0f, eig3 = 0.0f;
+
+              // normal case
+              if (p1 > 1e-15f) {
+                float q = trC / 3.0f;
+                float p2 = (cov_xx - q) * (cov_xx - q) +
+                           (cov_yy - q) * (cov_yy - q) +
+                           (cov_zz - q) * (cov_zz - q) + 2.0f * p1;
+                float p = std::sqrt(p2 / 6.0f);
+
+                float cov_xx_q = cov_xx - q;
+                float cov_yy_q = cov_yy - q;
+                float cov_zz_q = cov_zz - q;
+
+                float r = glm::clamp(
+                    (cov_xx_q * cov_yy_q * cov_zz_q +
+                     2.0f * cov_xy * cov_yz * cov_xz -
+                     cov_xx_q * cov_yz * cov_yz - cov_yy_q * cov_xz * cov_xz -
+                     cov_zz_q * cov_xy * cov_xy) /
+                        (2.0f * p * p * p),
+                    -1.0f, 1.0f);
+
+                float phi = ::acosf(r) / 3.0f;
+
+                eig1 = q + 2.0f * p * std::cos(phi);
+                eig2 = q + 2.0f * p *
+                               std::cos(phi + (2.0f * glm::pi<float>() / 3.0f));
+                eig3 = trC - eig1 - eig2;
+              } else  // covariance matrix is numericaly diagonal. We assume
+                      // eigen values are the diagonal values.
+              {
+                eig1 = std::max({cov_xx, cov_yy, cov_zz});
+                eig3 = std::min({cov_xx, cov_yy, cov_zz});
+                eig2 = trC - eig1 - eig2;
+              }
+
+              eigenVectors_[0] =
+                  glm::vec3(cov_xy * cov_xy + cov_xz * cov_xz +
+                                (cov_xx - eig2) * (cov_xx - eig3),
+                            cov_xy * ((cov_xx - eig3) + (cov_yy - eig2)) +
+                                cov_xz * cov_yz,
+                            cov_xz * ((cov_xx - eig3) + (cov_zz - eig2)) +
+                                cov_xy * cov_yz);
+
+              eigenVectors_[1] =
+                  glm::vec3(cov_xy * ((cov_xx - eig1) + (cov_yy - eig3)) +
+                                cov_xz * cov_yz,
+                            cov_yz * cov_yz + cov_xy * cov_xy +
+                                (cov_yy - eig1) * (cov_yy - eig3),
+                            cov_yz * ((cov_yy - eig3) + (cov_zz - eig1)) +
+                                cov_xy * cov_xz);
+
+              eigenVectors_[2] =
+                  glm::vec3(cov_xz * ((cov_xx - eig1) + (cov_zz - eig2)) +
+                                cov_xy * cov_yz,
+                            cov_yz * ((cov_yy - eig1) + (cov_zz - eig2)) +
+                                cov_xy * cov_xz,
+                            cov_yz * cov_yz + cov_xz * cov_xz +
+                                (cov_zz - eig1) * (cov_zz - eig2));
+
+              // Simplification of original method.
+              // We only need the first 2 eigen vectors for 2D projection.
+              // Therefor we are not intereted, which is bigger, but in leaving
+              // the smallest out.
+              float minEig = std::min({eig1, eig2, eig3});
+
+              if (eig3 == minEig) {
+                eigenVectors[0] = glm::normalize(eigenVectors_[0]);
+                eigenVectors[1] = glm::normalize(eigenVectors_[1]);
+              } else if (eig2 == minEig) {
+                eigenVectors[0] = glm::normalize(eigenVectors_[0]);
+                eigenVectors[1] = glm::normalize(eigenVectors_[2]);
+              } else  // if ( eig1 == minEig ) most unlikly case
+              {
+                eigenVectors[0] = glm::normalize(eigenVectors_[1]);
+                eigenVectors[1] = glm::normalize(eigenVectors_[2]);
+              }
+            }
+
+            std::vector<glm::vec2> facePointsProjected(face_vertIds.size());
+
+            std::transform(centeredPoints.cbegin(), centeredPoints.cend(),
+                           facePointsProjected.begin(),
+                           [&eigenVectors](const glm::vec3 &cp) -> glm::vec2 {
+                             return glm::vec2(glm::dot(cp, eigenVectors[0]),
+                                              glm::dot(cp, eigenVectors[1]));
+                           });
+
+            // checking the orientation. CCW should be kept
+            float sum = 0.0;
+            for (int i = 0; i < facePointsProjected.size() - 1; ++i) {
+              sum += (facePointsProjected[i + 1].x - facePointsProjected[i].x) *
+                     (facePointsProjected[i + 1].y + facePointsProjected[i].y);
+            }
+            sum +=
+                (facePointsProjected.front().x - facePointsProjected.back().x) *
+                (facePointsProjected.front().y + facePointsProjected.back().y);
+
+            if (sum > 0.0f) {
+              for (int i = 0; i < facePointsProjected.size(); ++i)
+                facePointsProjected[i].y *= -1.0f;
+            }
+
+            std::vector<unsigned int> triIndices =
+                triangulatePolygon(facePointsProjected);
+
+            face_vertIdsFace2Tris.resize(triIndices.size());
+            std::transform(
+                triIndices.cbegin(), triIndices.cend(),
+                face_vertIdsFace2Tris.begin(),
+                [&face_vertIds](const unsigned int fTriId) -> IndexedVert {
+                  return face_vertIds[fTriId];
+                });
           }
-        } else {
-          // Calculate the best fitting plane
-          glm::vec3 MidPoint(0.0);
-          for (const auto &vertex : face_vertIds) {
-            MidPoint += positions[vertex.v];
+          face_vertIds = std::move(face_vertIdsFace2Tris);
+        }
+
+        if (texcoords.empty()) texcoords.emplace_back(glm::vec2(0.0));
+
+        if (needsNormalComputation) {
+          for (int i = 0; i < face_vertIds.size(); i += 3) {
+            glm::vec3 n = glm::normalize(glm::cross(
+                positions[face_vertIds[i + 1].v] - positions[face_vertIds[i].v],
+                positions[face_vertIds[i + 2].v] -
+                    positions[face_vertIds[i].v]));
+
+            unsigned int n_idx = static_cast<unsigned int>(normals.size());
+            normals.push_back(n);
+            face_vertIds[i].vn = face_vertIds[i + 1].vn =
+                face_vertIds[i + 2].vn = n_idx;
           }
-          MidPoint /= float(face_vertIds.size());
+        }
 
-          std::vector<glm::vec3> centeredPoints(face_vertIds.size());
-
-          std::transform(
-              face_vertIds.cbegin(), face_vertIds.cend(),
-              centeredPoints.begin(),
-              [&positions, MidPoint](const IndexedVert &faceV) -> glm::vec3 {
-                return positions[faceV.v] - MidPoint;
-              });
-
-          float cov_xx = 0.0f, cov_xy = 0.0f;
-          float cov_yy = 0.0f, cov_yz = 0.0f;
-          float cov_xz = 0.0f, cov_zz = 0.0f;
-
-          for (const glm::vec3 &centeredP : centeredPoints) {
-            cov_xx += centeredP.x * centeredP.x;
-            cov_xy += centeredP.x * centeredP.y;
-
-            cov_yy += centeredP.y * centeredP.y;
-            cov_yz += centeredP.y * centeredP.z;
-
-            cov_xz += centeredP.x * centeredP.z;
-            cov_zz += centeredP.z * centeredP.z;
-          }
-
-          // viktor-vad: Very strange, but the pca.hpp and pca.inc disappeared
-          // from glm/gtx. Did not find any explanation for this. Instead of
-          // some header file copy-hacking, I implemented a 3x3 verion of eigen
-          // decomposition. It was not intended, but most likely it is faster
-          // than the original glm pca, since that is a general method with
-          // Housholder and QR.
-          // https://dl.acm.org/doi/epdf/10.1145/355578.366316
-          // https://en.wikipedia.org/wiki/Eigenvalue_algorithm#2%C3%972_matrices
-          glm::vec3 eigenVectors[2];
+        for (const auto &vertex : face_vertIds) {
+          unsigned int &vIndex = vertexIndices[vertex];
+          if (vIndex == 0)  // new vertex
           {
-            glm::vec3 eigenVectors_[3];
-            float p1 = cov_xy * cov_xy + cov_xz * cov_xz + cov_yz * cov_yz;
-            float trC = cov_xx + cov_yy + cov_zz;
-            float eig1 = 0.0f, eig2 = 0.0f, eig3 = 0.0f;
+            Vertex v;
+            v.position = positions[vertex.v];
+            v.texcoord = texcoords[vertex.vt];
+            v.normal = normals[vertex.vn];
 
-            // normal case
-            if (p1 > 1e-15f) {
-              float q = trC / 3.0f;
-              float p2 = (cov_xx - q) * (cov_xx - q) +
-                         (cov_yy - q) * (cov_yy - q) +
-                         (cov_zz - q) * (cov_zz - q) + 2.0f * p1;
-              float p = std::sqrt(p2 / 6.0f);
-
-              float cov_xx_q = cov_xx - q;
-              float cov_yy_q = cov_yy - q;
-              float cov_zz_q = cov_zz - q;
-
-              float r = glm::clamp((cov_xx_q * cov_yy_q * cov_zz_q +
-                                    2.0f * cov_xy * cov_yz * cov_xz -
-                                    cov_xx_q * cov_yz * cov_yz -
-                                    cov_yy_q * cov_xz * cov_xz -
-                                    cov_zz_q * cov_xy * cov_xy) /
-                                       (2.0f * p * p * p),
-                                   -1.0f, 1.0f);
-
-              float phi = ::acosf(r) / 3.0f;
-
-              eig1 = q + 2.0f * p * std::cos(phi);
-              eig2 = q + 2.0f * p *
-                             std::cos(phi + (2.0f * glm::pi<float>() / 3.0f));
-              eig3 = trC - eig1 - eig2;
-            } else // covariance matrix is numericaly diagonal. We assume eigen
-                   // values are the diagonal values.
-            {
-              eig1 = std::max({cov_xx, cov_yy, cov_zz});
-              eig3 = std::min({cov_xx, cov_yy, cov_zz});
-              eig2 = trC - eig1 - eig2;
-            }
-
-            eigenVectors_[0] = glm::vec3(
-                cov_xy * cov_xy + cov_xz * cov_xz +
-                    (cov_xx - eig2) * (cov_xx - eig3),
-                cov_xy * ((cov_xx - eig3) + (cov_yy - eig2)) + cov_xz * cov_yz,
-                cov_xz * ((cov_xx - eig3) + (cov_zz - eig2)) + cov_xy * cov_yz);
-
-            eigenVectors_[1] = glm::vec3(
-                cov_xy * ((cov_xx - eig1) + (cov_yy - eig3)) + cov_xz * cov_yz,
-                cov_yz * cov_yz + cov_xy * cov_xy +
-                    (cov_yy - eig1) * (cov_yy - eig3),
-                cov_yz * ((cov_yy - eig3) + (cov_zz - eig1)) + cov_xy * cov_xz);
-
-            eigenVectors_[2] = glm::vec3(
-                cov_xz * ((cov_xx - eig1) + (cov_zz - eig2)) + cov_xy * cov_yz,
-                cov_yz * ((cov_yy - eig1) + (cov_zz - eig2)) + cov_xy * cov_xz,
-                cov_yz * cov_yz + cov_xz * cov_xz +
-                    (cov_zz - eig1) * (cov_zz - eig2));
-
-            // Simplification of original method.
-            // We only need the first 2 eigen vectors for 2D projection.
-            // Therefor we are not intereted, which is bigger, but in leaving
-            // the smallest out.
-            float minEig = std::min({eig1, eig2, eig3});
-
-            if (eig3 == minEig) {
-              eigenVectors[0] = glm::normalize(eigenVectors_[0]);
-              eigenVectors[1] = glm::normalize(eigenVectors_[1]);
-            } else if (eig2 == minEig) {
-              eigenVectors[0] = glm::normalize(eigenVectors_[0]);
-              eigenVectors[1] = glm::normalize(eigenVectors_[2]);
-            } else // if ( eig1 == minEig ) most unlikly case
-            {
-              eigenVectors[0] = glm::normalize(eigenVectors_[1]);
-              eigenVectors[1] = glm::normalize(eigenVectors_[2]);
-            }
+            resultMesh.vertexArray.push_back(v);
+            resultMesh.indexArray.push_back(nIndexedVerts++);
+            vIndex = nIndexedVerts;
+          } else {
+            resultMesh.indexArray.push_back(vIndex - 1);
           }
-
-          std::vector<glm::vec2> facePointsProjected(face_vertIds.size());
-
-          std::transform(centeredPoints.cbegin(), centeredPoints.cend(),
-                         facePointsProjected.begin(),
-                         [&eigenVectors](const glm::vec3 &cp) -> glm::vec2 {
-                           return glm::vec2(glm::dot(cp, eigenVectors[0]),
-                                            glm::dot(cp, eigenVectors[1]));
-                         });
-
-          // checking the orientation. CCW should be kept
-          float sum = 0.0;
-          for (int i = 0; i < facePointsProjected.size() - 1; ++i) {
-            sum += (facePointsProjected[i + 1].x - facePointsProjected[i].x) *
-                   (facePointsProjected[i + 1].y + facePointsProjected[i].y);
-          }
-          sum +=
-              (facePointsProjected.front().x - facePointsProjected.back().x) *
-              (facePointsProjected.front().y + facePointsProjected.back().y);
-
-          if (sum > 0.0f) {
-            for (int i = 0; i < facePointsProjected.size(); ++i)
-              facePointsProjected[i].y *= -1.0f;
-          }
-
-          std::vector<unsigned int> triIndices =
-              triangulatePolygon(facePointsProjected);
-
-          face_vertIdsFace2Tris.resize(triIndices.size());
-          std::transform(
-              triIndices.cbegin(), triIndices.cend(),
-              face_vertIdsFace2Tris.begin(),
-              [&face_vertIds](const unsigned int fTriId) -> IndexedVert {
-                return face_vertIds[fTriId];
-              });
         }
-        face_vertIds = std::move(face_vertIdsFace2Tris);
-      }
-
-      if (texcoords.empty())
-        texcoords.emplace_back(glm::vec2(0.0));
-
-      if (needsNormalComputation) {
-        for (int i = 0; i < face_vertIds.size(); i += 3) {
-          glm::vec3 n = glm::normalize(glm::cross(
-              positions[face_vertIds[i + 1].v] - positions[face_vertIds[i].v],
-              positions[face_vertIds[i + 2].v] - positions[face_vertIds[i].v]));
-
-          unsigned int n_idx = static_cast<unsigned int>(normals.size());
-          normals.push_back(n);
-          face_vertIds[i].vn = face_vertIds[i + 1].vn = face_vertIds[i + 2].vn =
-              n_idx;
-        }
-      }
-
-      for (const auto &vertex : face_vertIds) {
-        unsigned int &vIndex = vertexIndices[vertex];
-        if (vIndex == 0) // new vertex
-        {
-          Vertex v;
-          v.position = positions[vertex.v];
-          v.texcoord = texcoords[vertex.vt];
-          v.normal = normals[vertex.vn];
-
-          resultMesh.vertexArray.push_back(v);
-          resultMesh.indexArray.push_back(nIndexedVerts++);
-          vIndex = nIndexedVerts;
-        } else {
-          resultMesh.indexArray.push_back(vIndex - 1);
-        }
-      }
-    } break;
+      } break;
     }
 
     tokenizer.ToNextLine();
@@ -472,13 +474,13 @@ static inline constexpr uint64_t fasthash64(uint64_t v, uint64_t seed) {
   return fasthash64_mix(h);
 }
 
-std::size_t
-ObjParser::IndexedVertHash::operator()(const IndexedVert &iv) const noexcept {
+std::size_t ObjParser::IndexedVertHash::operator()(
+    const IndexedVert &iv) const noexcept {
   return fasthash64(iv.vt, iv.vn_64);
 }
 
-static std::vector<unsigned int>
-triangulatePolygon(const std::vector<glm::vec2> &polygon) {
+static std::vector<unsigned int> triangulatePolygon(
+    const std::vector<glm::vec2> &polygon) {
   constexpr float M_2PI = glm::two_pi<float>();
   using Edge = std::array<unsigned int, 2>;
 
@@ -502,7 +504,7 @@ triangulatePolygon(const std::vector<glm::vec2> &polygon) {
                       unsigned int &oppositeIdx) const noexcept {
       for (triIdx = static_cast<unsigned int>(triIdxList.size()) / 3 - 1;
            static_cast<int>(triIdx) >= 0;
-           triIdx--) // usually the neighbouring triangles are pushed later
+           triIdx--)  // usually the neighbouring triangles are pushed later
       {
         if ((triIdxList[3 * triIdx] == edge[0]) &&
             (triIdxList[3 * triIdx + 1] == edge[1])) {

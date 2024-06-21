@@ -122,6 +122,9 @@
     <None Include="shaders\Vert_traj.vert" />
     <None Include="shaders\Frag_axes.frag" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="example.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

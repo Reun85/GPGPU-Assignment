@@ -18,15 +18,13 @@
 #include "cpunbody/Nbody.h"
 
 void SecondThreadFunction(NBody& body, bool* quit) {
-    
   while (!(*quit)) {
     body.Update();
   }
   std::cout << "Other thread stopping" << std::endl;
 }
 
-static const int PARTICLE_SIZE = 10000;
-
+static const int PARTICLE_SIZE = 4000;
 
 int main(int argc, char* args[]) {
   //
@@ -94,8 +92,8 @@ int main(int argc, char* args[]) {
       100,  // az ablak bal-felső sarkának kezdeti Y koordinátája
       800,  // ablak szélessége
       600,  // és magassága
-      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN |
-          SDL_WINDOW_RESIZABLE|SDL_WINDOW_MAXIMIZED);  // megjelenítési tulajdonságok
+      SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE |
+          SDL_WINDOW_MAXIMIZED);  // megjelenítési tulajdonságok
 
   // ha nem sikerült létrehozni az ablakot, akkor írjuk ki a hibát, amit kaptunk
   // és lépjünk ki
@@ -187,7 +185,7 @@ int main(int argc, char* args[]) {
       return 1;
     }
 
-     std::thread t(SecondThreadFunction,std::ref(nbody),&quit);
+    std::thread t(SecondThreadFunction, std::ref(nbody), &quit);
 
     while (!quit) {
       // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
@@ -264,7 +262,7 @@ int main(int argc, char* args[]) {
       {
         MyMutex* particles = nbody.GetNewData();
         if (particles) {
-          std::cout << "UPDATED!"<<std::endl;
+          std::cout << "UPDATED!" << std::endl;
           app.SetParticles(particles->data);
           delete particles;
         }
@@ -286,7 +284,7 @@ int main(int argc, char* args[]) {
 
     // takarítson el maga után az objektumunk
     app.Clean();
-     t.join();
+    t.join();
   }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU
      // erőforrásokat befoglaló osztályok destruktorai is itt futnak le
 

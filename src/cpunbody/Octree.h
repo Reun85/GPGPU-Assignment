@@ -100,8 +100,9 @@ void Octree::DepthFirstTravel(
       for (int i = 0; i < 8; i++) {
         vec3 currcenter = current->center + (currsize * Node::OFFSETS[i]);
 
-  stack.emplace_back(std::make_shared<NodeWithExtraInfo<T>>(
-      NodeWithExtraInfo<T>{ current->inner->m_children[i], current->depth + 1, currcenter,
+        stack.emplace_back(
+            std::make_shared<NodeWithExtraInfo<T>>(NodeWithExtraInfo<T>{
+                current->inner->m_children[i], current->depth + 1, currcenter,
                 currsize, MS(current)}));
       }
     } else {

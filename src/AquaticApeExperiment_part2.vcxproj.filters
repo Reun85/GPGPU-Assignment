@@ -42,9 +42,6 @@
     <ClCompile Include="includes\ObjParser.cpp">
       <Filter>GL Utils</Filter>
     </ClCompile>
-    <ClCompile Include="includes\FallingObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cpunbody\BoundingBox.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -55,6 +52,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="cpunbody\Octreostream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cpunbody\BarnesHut.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,9 +83,6 @@
     <ClInclude Include="cpunbody\BoundingBox.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cpunbody\Mutex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="cpunbody\Nbody.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -98,84 +95,26 @@
     <ClInclude Include="includes\SUpdateInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Assets\Suzanne.obj">
-      <Filter>Assets</Filter>
-    </Text>
-    <Text Include="Assets\hardhat.obj" />
-    <Text Include="Assets\table.obj" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Assets\wood.jpg">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\zpos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\xneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\xpos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\yneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\ypos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\zneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\water_texture.jpg">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\danger_glass.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_xneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_xpos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_yneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_ypos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_zneg.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\lab_zpos.png">
-      <Filter>Assets</Filter>
-    </Image>
-    <Image Include="Assets\grid.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Assets\hat.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Assets\wall.png">
-      <Filter>Resource Files</Filter>
-    </Image>
-    <Image Include="Assets\table.jpg">
-      <Filter>Resource Files</Filter>
-    </Image>
+    <ClInclude Include="cpunbody\BarnesHut.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cpunbody\Vec3.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Frag_Lighting.frag" />
     <None Include="shaders\Frag_PosCol.frag" />
     <None Include="shaders\Frag_skybox.frag" />
-    <None Include="shaders\Frag_TP.frag" />
     <None Include="shaders\Vert_axes.vert" />
     <None Include="shaders\Vert_PosNormTex.vert" />
     <None Include="shaders\Vert_skybox.vert" />
-    <None Include="shaders\Vert_TP.vert" />
     <None Include="shaders\Vert_traj.vert" />
     <None Include="imgui.ini" />
     <None Include="shaders\Vert_Point.vert" />
+    <None Include="shaders\Frag_axes.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="example.txt" />
   </ItemGroup>
 </Project>

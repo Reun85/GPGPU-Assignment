@@ -61,11 +61,11 @@ void CMyApp::CleanSkyboxShaders() {
   // glDeleteProgram(m_programSkyboxID);
 }
 
-void CMyApp::CleanGeometry() { CleanSkyboxGeometry();
+void CMyApp::CleanGeometry() {
+  CleanSkyboxGeometry();
 
-glDeleteBuffers(1, &VBO);
+  glDeleteBuffers(1, &VBO);
   glDeleteVertexArrays(1, &VAO);
-
 }
 
 void CMyApp::InitSkyboxGeometry() {
@@ -128,8 +128,8 @@ void CMyApp::InitSkyboxGeometry() {
                                          7,
                                      }};
 
-   //m_SkyboxGPU = CreateGLObjectFromMesh(
-   //    skyboxCPU, {{0, offsetof(glm::vec3, x), 3, GL_FLOAT}});
+  // m_SkyboxGPU = CreateGLObjectFromMesh(
+  //     skyboxCPU, {{0, offsetof(glm::vec3, x), 3, GL_FLOAT}});
 }
 
 void CMyApp::CleanSkyboxGeometry() {
@@ -253,7 +253,7 @@ void CMyApp::InitGeometry() {
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
   std::vector<vec3> vertices(count);
   glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3),
-                  vertices.data(),GL_STATIC_DRAW);
+               vertices.data(), GL_STATIC_DRAW);
 
   // Specify the layout of the vertex data
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3),
@@ -302,11 +302,11 @@ void CMyApp::Render() {
   // Bind the VAO and draw points
   glBindVertexArray(VAO);
   glPointSize(1.5);
-    glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
-                       glm::value_ptr(glm::identity<glm::mat4>()));
+  glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
+                     glm::value_ptr(glm::identity<glm::mat4>()));
 
-    glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
-                       glm::value_ptr(m_camera.GetViewProj()));
+  glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
+                     glm::value_ptr(m_camera.GetViewProj()));
   glDrawArrays(GL_POINTS, 0, count);
   glBindVertexArray(0);
 

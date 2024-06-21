@@ -50,13 +50,13 @@ class MyMutex {
   std::mutex& m_mut;
 };
 
-   ParticlePair EvenLayout(const size_t size);
-  ParticlePair UniformLayout(const size_t size);
+ParticlePair EvenLayout(const size_t size);
+ParticlePair UniformLayout(const size_t size);
 
 class NBody {
  public:
-
-  NBody(const size_t size, std::function<ParticlePair(const size_t)> fun = UniformLayout);
+  NBody(const size_t size,
+        std::function<ParticlePair(const size_t)> fun = UniformLayout);
   ~NBody();
 
   void Init();
@@ -92,4 +92,3 @@ class NBody {
     return os;
   }
 };
-

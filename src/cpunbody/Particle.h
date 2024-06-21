@@ -2,7 +2,7 @@
 
 #include "Vec3.hpp"
 
-static const float default_mass = 5000.f;
+static const float default_mass = 50000.f;
 
 // Does not include position!
 class ParticleData {
@@ -15,7 +15,7 @@ class ParticleData {
 
   Ty_Mass m_mass;
 
-  ParticleData(Ty_Mass mass = default_mass,vec3 velocity = vec3(0, 0, 0))
+  ParticleData(Ty_Mass mass = default_mass, vec3 velocity = vec3(0, 0, 0))
       : m_velocity(velocity), m_mass(mass), m_force(0, 0, 0) {}
 
   void resetForce() { m_force = vec3(0, 0, 0); }
@@ -28,6 +28,3 @@ class ParticleData {
 using ParticlePos = vec3;
 using ParticlePair =
     std::pair<std::vector<ParticlePos>, std::vector<ParticleData>>;
-
-
-

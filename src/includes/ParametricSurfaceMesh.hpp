@@ -44,7 +44,7 @@ template <typename SurfT>
       // - az (i,j)-hez tartózó 1D-s index a VBO-ban: i+j*(N+1)
       // - az (i,j)-hez tartózó 1D-s index az IB-ben: i*6+j*6*N
       //		(mert minden négyszöghöz 2db háromszög = 6 index
-      //tartozik)
+      // tartozik)
       //
       std::size_t index = i * 6 + j * (6 * N);
       outputMesh.indexArray[index + 0] =

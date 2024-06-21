@@ -3,7 +3,7 @@ template <typename T>
 struct Vec3 {
   T x, y, z;
   constexpr Vec3() : x(0), y(0), z(0) {}
-  constexpr Vec3(const T& x) : x(x), y(y), z(z) {}
+  constexpr Vec3(const T& inp) : x(inp), y(inp), z(inp) {}
   constexpr Vec3(const T& x, const T& y, const T& z) : x(x), y(y), z(z) {}
   constexpr Vec3(const Vec3& other) : x(other.x), y(other.y), z(other.z) {}
   constexpr void operator=(const Vec3& other) {

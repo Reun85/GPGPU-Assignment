@@ -59,8 +59,8 @@ class CMyApp {
   /// Uniform location
   GLint ul(const char *uniformName) noexcept;
 
-  GLuint VAO=0;
-  GLuint VBO=0;
+  GLuint VAO = 0;
+  GLuint VBO = 0;
 
   GLuint m_programID = 0;
   GLuint m_programPointID = 0;
