@@ -17,6 +17,8 @@
 #include "MyApp.h"
 #include "cpunbody/Nbody.h"
 
+
+#include <OpenCL/CL/cl.hpp>
 void SecondThreadFunction(NBody& body, bool* quit) {
   while (!(*quit)) {
     body.Update();

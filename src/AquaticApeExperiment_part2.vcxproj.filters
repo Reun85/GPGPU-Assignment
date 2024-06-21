@@ -101,6 +101,9 @@
     <ClInclude Include="cpunbody\Vec3.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vendor\OpenCL\oclutils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Frag_Lighting.frag" />
