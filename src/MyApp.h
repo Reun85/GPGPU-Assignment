@@ -42,6 +42,8 @@ class CMyApp {
 
   void SetParticles(const std::vector<vec3> &particles);
 
+  GLuint GetVBOAddress() { return VBO; }
+
  protected:
   void SetupDebugCallback();
 

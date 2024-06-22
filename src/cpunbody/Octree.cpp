@@ -35,7 +35,6 @@ bool isinside(vec3 inclusivemin, vec3 exclusivemax, vec3 inp) {
          vec3::max(exclusivemax, inp) == exclusivemax;
 }
 
-
 Octree::Octree(std::vector<ParticlePos> &particles,
                std::vector<ParticleData> &particle_data)
     : m_nodes(std::pow(8, START_DEPTH + 1) * 50 * 8) {

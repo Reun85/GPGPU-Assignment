@@ -2,7 +2,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-#include "Nbody.h"
+#include "NBody.h"
 #include "Octree.h"
 #include "Particle.h"
 

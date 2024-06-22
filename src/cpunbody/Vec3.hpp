@@ -1,4 +1,6 @@
 #pragma once
+#include <algorithm>
+#include <glm/glm.hpp>
 template <typename T>
 struct Vec3 {
   T x, y, z;

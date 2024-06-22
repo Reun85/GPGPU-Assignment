@@ -5,16 +5,10 @@ const float distanceThreshold = 0.2f;
 const float eps = 1e-3f;
 static constexpr double G = 6.67430e-11f;
 
-
-
-
 void BarnesHut(std::vector<ParticlePos>& particles,
                std::vector<ParticleData>& particles_data, const Octree& oc,
                NBodyTimer& timer, std::mutex& tolock) {
   const size_t numberOfGroups = (particles.size()) / (ParticlePerGroup);
-  vec3 starter_center = oc.m_center;
-  vec3 starter_size = oc.m_size / 2.f;
-
 
   int prevprog = 0;
   for (size_t local_id = 0; local_id < numberOfGroups; ++local_id) {

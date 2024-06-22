@@ -16,7 +16,7 @@ class ParticleData {
   Ty_Mass m_mass;
 
   ParticleData(Ty_Mass mass = default_mass, vec3 velocity = vec3(0, 0, 0))
-      : m_velocity(velocity), m_mass(mass), m_force(0, 0, 0) {}
+      : m_velocity(velocity), m_force(0, 0, 0), m_mass(mass) {}
 
   void resetForce() { m_force = vec3(0, 0, 0); }
 
@@ -26,5 +26,6 @@ class ParticleData {
   }
 };
 using ParticlePos = vec3;
+#include <vector>
 using ParticlePair =
     std::pair<std::vector<ParticlePos>, std::vector<ParticleData>>;

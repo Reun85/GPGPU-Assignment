@@ -9,11 +9,9 @@
 
 // All OpenCL headers
 #if defined(__APPLE__) || defined(MACOSX)
-#include <OpenCL/CL/opencl.h>
+#include <OpenCL/opencl.h>
 #else
-
-#include <OpenCL/CL/cl.hpp>
-
+#include <CL/opencl.hpp>
 #endif
 
 #include <algorithm>

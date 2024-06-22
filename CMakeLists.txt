@@ -15,7 +15,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include_directories(src/includes)
-include_directories(src/vendor)
+include_directories(src/vendor/OpenCL)
 
 project(${PROJECT_NAME} VERSION 0.1.0)
 

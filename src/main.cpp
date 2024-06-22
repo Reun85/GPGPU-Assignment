@@ -1,5 +1,5 @@
 // GLEW
-#define CL_TARGET_OPENCL_VERSION 300
+#define CL_TARGET_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 00
 #include <CL/cl_gl.h>
 #include <GL/glew.h>
@@ -14,23 +14,18 @@
 #include <imgui_impl_sdl2.h>
 
 // standard
-#include <OpenCL/CL/cl.h>
-#include <OpenCL/CL/opencl.h>
-
 #include <iostream>
 #include <sstream>
 #include <thread>
 
 #include "MyApp.h"
-#include "cpunbody/Nbody.h"
+#include "NBody.h"
 void SecondThreadFunction(NBody& body, bool* quit) {
   while (!(*quit)) {
-    body.Update();
+    body.Calculate();
   }
   std::cout << "Other thread stopping" << std::endl;
 }
-
-static const int PARTICLE_SIZE = 4000;
 
 int main(int argc, char* args[]) {
   //
@@ -169,7 +164,7 @@ int main(int argc, char* args[]) {
   ImGui_ImplOpenGL3_Init();
   // Create NBody Simulation
 
-  NBody nbody(PARTICLE_SIZE);
+  NBody nbody;
 
   //
   // 4. lépés: indítsuk el a fő üzenetfeldolgozó ciklust
@@ -181,7 +176,7 @@ int main(int argc, char* args[]) {
     SDL_Event ev;
 
     // alkalmazás példánya
-    CMyApp app(PARTICLE_SIZE);
+    CMyApp app(PARTICLE_COUNT);
     if (!app.Init()) {
       SDL_GL_DeleteContext(context);
       SDL_DestroyWindow(win);
@@ -190,6 +185,14 @@ int main(int argc, char* args[]) {
           "[app.Init] Error during the initialization of the application!");
       return 1;
     }
+
+    if (!nbody.Init(app.GetVBOAddress())) {
+      SDL_LogError(
+          SDL_LOG_CATEGORY_ERROR,
+          "[nbody.Init] Error during the initialization of the application!");
+      return 1;
+    }
+    nbody.Start();
 
     std::thread t(SecondThreadFunction, std::ref(nbody), &quit);
 
@@ -265,14 +268,7 @@ int main(int argc, char* args[]) {
            static_cast<float>(CurrentTick - LastTick) / 1000.0f};
       LastTick = CurrentTick;  // Mentsük el utolsóként az aktuális "tick"-et!
 
-      {
-        MyMutex* particles = nbody.GetNewData();
-        if (particles) {
-          std::cout << "UPDATED!" << std::endl;
-          app.SetParticles(particles->data);
-          delete particles;
-        }
-      }
+      nbody.TryAndWriteData();
       app.Update(updateInfo);
       app.Render();
 
@@ -291,6 +287,7 @@ int main(int argc, char* args[]) {
     // takarítson el maga után az objektumunk
     app.Clean();
     t.join();
+    nbody.Clean();
   }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU
      // erőforrásokat befoglaló osztályok destruktorai is itt futnak le
 

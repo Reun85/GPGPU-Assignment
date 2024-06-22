@@ -1,5 +1,5 @@
 // Utils
-#include "Nbody.h"
+#include "cpunbody/NBody.h"
 
 #include <cmath>
 #include <iostream>
@@ -20,7 +20,7 @@ ParticlePair UniformLayout(const size_t size) {
     float x = distribution(generator);
     float y = distribution(generator);
     float z = distribution(generator);
-	particles.emplace_back(ParticlePos{vec3(x, y,z)});
+    particles.emplace_back(ParticlePos{vec3(x, y, z)});
   }
 
   return std::make_pair(particles, particle_data);
@@ -49,16 +49,14 @@ ParticlePair EvenLayout(const size_t count) {
   return std::make_pair(particles, particle_data);
 }
 
-NBody::NBody(const size_t size,std::function<ParticlePair(const size_t)> fun) {
+NBody::NBody(const size_t size, std::function<ParticlePair(const size_t)> fun) {
   ParticlePair particles = fun(size);
 
-
-
-    m_particles_pos = particles.first;
-    m_particles_data = particles.second;
-    m_particles_pos[0] = vec3(-5.f, -5.f, -5.f);
-    m_particles_data[0] = ParticleData(1e+11);
-      Init();
+  m_particles_pos = particles.first;
+  m_particles_data = particles.second;
+  m_particles_pos[0] = vec3(-5.f, -5.f, -5.f);
+  m_particles_data[0] = ParticleData(1e+11);
+  Init();
 }
 NBody::~NBody() {}
 
