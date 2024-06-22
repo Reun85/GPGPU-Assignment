@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build" ToolsVersion="15.0">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -46,7 +46,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)includes;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)includes;T:\OCLPack\include\;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -95,6 +95,7 @@
     <ClCompile Include="includes\GLUtils.cpp" />
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
+    <ClCompile Include="NBody.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpunbody\BarnesHut.h" />
@@ -111,10 +112,23 @@
     <ClInclude Include="includes\Camera.h" />
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
+    <ClInclude Include="NBody.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl.hpp" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10_ext.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d11_ext.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d9_ext.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_ext.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_gl.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_gl_ext.h" />
+    <ClInclude Include="vendor\OpenCL\CL\cl_platform.h" />
+    <ClInclude Include="vendor\OpenCL\CL\opencl.h" />
     <ClInclude Include="vendor\OpenCL\oclutils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
+    <None Include="openclkernels.cl" />
     <None Include="shaders\Frag_Lighting.frag" />
     <None Include="shaders\Frag_PosCol.frag" />
     <None Include="shaders\Frag_skybox.frag" />
@@ -124,9 +138,6 @@
     <None Include="shaders\Vert_skybox.vert" />
     <None Include="shaders\Vert_traj.vert" />
     <None Include="shaders\Frag_axes.frag" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="example.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

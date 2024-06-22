@@ -1,8 +1,15 @@
 #include "NBody.h"
 
+#define __NO_STD_VECTOR
+#define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
-#include <CL/opencl.hpp>
+#include <fstream>
+#include <iostream>
+#include <oclutils.hpp>
 #include <random>
+#include <string>
+#include <utility>
+using namespace cl;
 void NBody::TryAndWriteData() {
   bool update = false;
   {
@@ -69,8 +76,8 @@ bool NBody::Init(GLuint VBOIndex) {
     // Initialize OpenCL API //
     ///////////////////////////
 
-    cl::vector<cl::Platform> platforms;
-    cl::Platform::get(platforms.data());
+    vector<cl::Platform> platforms;
+    Platform::get(&platforms);
 
     // Try to get the sharing platform!
     bool create_context_success = false;
@@ -102,7 +109,7 @@ bool NBody::Init(GLuint VBOIndex) {
         context = cl::Context(CL_DEVICE_TYPE_GPU, contextProperties);
         create_context_success = true;
         break;
-      } catch (cl::Error error) {
+      } catch (Error error) {
       }
     }
 

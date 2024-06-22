@@ -2,8 +2,10 @@
 
 #define CL_TARGET_OPENCL_VERSION 200
 #define CL_HPP_TARGET_OPENCL_VERSION 00
+#define __NO_STD_VECTOR
+#define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl_gl.h>
-#include <GL/gl.h>
+#include <GL/glew.h>
 
 #include <CL/cl.hpp>
 #include <cstddef>

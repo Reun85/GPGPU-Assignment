@@ -57,6 +57,9 @@
     <ClCompile Include="cpunbody\BarnesHut.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="NBody.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyApp.h">
@@ -104,6 +107,42 @@
     <ClInclude Include="vendor\OpenCL\oclutils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="NBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d9_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_d3d11_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_gl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_gl_ext.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\cl_platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\OpenCL\CL\opencl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Frag_Lighting.frag" />
@@ -116,8 +155,6 @@
     <None Include="imgui.ini" />
     <None Include="shaders\Vert_Point.vert" />
     <None Include="shaders\Frag_axes.frag" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="example.txt" />
+    <None Include="openclkernels.cl" />
   </ItemGroup>
 </Project>
