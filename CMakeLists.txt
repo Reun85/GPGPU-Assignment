@@ -77,6 +77,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::S
 find_package(OpenCL REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
 
+include_directories(vendor)
 # add_subdirectory(vendor/OpenCL)
 # #
 # target_link_libraries(${PROJECT_NAME} PRIVATE OpenCLLib "-std=c++11")

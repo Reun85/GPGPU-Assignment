@@ -5,9 +5,9 @@
 #include <SDL_video.h>
 
 #include <fstream>
-#include <mutex>
-// #include <oclutils.hpp>
 #include <iostream>
+#include <mutex>
+#include <oclutils.hpp>
 #include <random>
 #include <vector>
 using namespace cl;
@@ -77,7 +77,10 @@ bool NBody::Init(GLuint VBOIndex) {
     // Initialize OpenCL API //
     ///////////////////////////
 
-    vector<cl::Platform> platforms;
+    cl_uint n;
+    cl_int err = ::clGetPlatformIDs(0, NULL, &n);
+    std::cout << err << 't' << n << std::endl;
+    std::vector<cl::Platform> platforms;
     Platform::get(&platforms);
 
     // Try to get the sharing platform!
@@ -159,7 +162,7 @@ bool NBody::Init(GLuint VBOIndex) {
     positionupdate = cl::Kernel(program, "AddForces");
 
   } catch (cl::Error error) {
-    std::cout << error.what() << "(" << gluErrorString(error.err()) << ")"
+    std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
               << std::endl;
     return false;
   }

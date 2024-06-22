@@ -1,8 +1,8 @@
 #pragma once
 
 #define CL_HPP_ENABLE_EXCEPTIONS
-#define CL_TARGET_OPENCL_VERSION 300
-#define CL_HPP_TARGET_OPENCL_VERSION 00
+#define CL_TARGET_OPENCL_VERSION 200
+#define CL_HPP_TARGET_OPENCL_VERSION 200
 #include <GL/glew.h>
 
 #include <CL/opencl.hpp>
@@ -40,6 +40,7 @@ class NBody {
   // Initialise OpenCL, attach OpenGL Buffers
   bool Init(GLuint VBOIndex);
 
+  /// \brief yes
   /// Generates the particles and moves them to the GPU.
   /// @param particle_count: the number passed to generating func
   /// @param extra_allocate_particle_count: the additional space allocated on
