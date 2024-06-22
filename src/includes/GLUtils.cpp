@@ -17,7 +17,8 @@ void loadShader(const GLuint loadedShader,
   // ha nem sikerult hibauzenet es -1 visszaadasa
   if (loadedShader == 0) {
     SDL_LogMessage(SDL_LOG_CATEGORY_ERROR, SDL_LOG_PRIORITY_ERROR,
-                   "Shader needs to be inited before loading %s !", _fileName);
+                   "Shader needs to be inited before loading %s !",
+                   _fileName.c_str());
     return;
   }
 
@@ -28,7 +29,7 @@ void loadShader(const GLuint loadedShader,
   std::ifstream shaderStream(_fileName);
   if (!shaderStream.is_open()) {
     SDL_LogMessage(SDL_LOG_CATEGORY_ERROR, SDL_LOG_PRIORITY_ERROR,
-                   "Error while loading shader %s!", _fileName);
+                   "Error while loading shader %s!", _fileName.c_str());
     return;
   }
 

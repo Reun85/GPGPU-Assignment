@@ -1,4 +1,7 @@
 // GLEW
+#define CL_TARGET_OPENCL_VERSION 300
+#define CL_HPP_TARGET_OPENCL_VERSION 00
+#include <CL/cl_gl.h>
 #include <GL/glew.h>
 
 // SDL
@@ -11,14 +14,15 @@
 #include <imgui_impl_sdl2.h>
 
 // standard
+#include <OpenCL/CL/cl.h>
+#include <OpenCL/CL/opencl.h>
+
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 #include "MyApp.h"
 #include "cpunbody/Nbody.h"
-
-
-#include <OpenCL/CL/cl.hpp>
 void SecondThreadFunction(NBody& body, bool* quit) {
   while (!(*quit)) {
     body.Update();

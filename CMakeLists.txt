@@ -10,11 +10,12 @@ set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG -g")
 
 set(CMAKE_CXX_FLAGS "-Wall -pedantic ")
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include_directories(src/includes)
+include_directories(src/vendor)
 
 project(${PROJECT_NAME} VERSION 0.1.0)
 
