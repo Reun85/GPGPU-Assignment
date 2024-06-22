@@ -1,19 +1,17 @@
 #include "NBody.h"
 
-#define __NO_STD_VECTOR
-#define __CL_ENABLE_EXCEPTIONS
-#include <CL/cl.hpp>
-#include <fstream>
-#include <iostream>
+#include <CL/cl_gl.h>
+#include <GL/gl.h>
+#include <SDL_video.h>
+
+#include <mutex>
 #include <oclutils.hpp>
 #include <random>
-#include <string>
-#include <utility>
 using namespace cl;
 void NBody::TryAndWriteData() {
   bool update = false;
   {
-    std::lock_guard done_lock(m_done_mutex);
+    std::lock_guard<std::mutex> done_lock(m_done_mutex);
     if (m_newdata && m_writing_mutex.try_lock()) {
       m_newdata = false;
       update = true;
@@ -96,9 +94,13 @@ bool NBody::Init(GLuint VBOIndex) {
           CL_CONTEXT_PLATFORM,
           (cl_context_properties)(platform)(),
           CL_GL_CONTEXT_KHR,
-          (cl_context_properties)glXGetCurrentContext(),
+          (cl_context_properties)SDL_GL_GetCurrentContext(),
           CL_GLX_DISPLAY_KHR,
-          (cl_context_properties)glXGetCurrentDisplay(),
+          (cl_context_properties)SDL_GL_GetCurrentWindow(),
+      // CL_GL_CONTEXT_KHR,
+      // (cl_context_properties)glXGetCurrentContext(),
+      // CL_GLX_DISPLAY_KHR,
+      // (cl_context_properties)glXGetCurrentDisplay(),
 #elif defined(__APPLE__)
       // todo
 #endif
@@ -126,7 +128,7 @@ bool NBody::Init(GLuint VBOIndex) {
     /////////////////////////////////
 
     // Read source file
-    std::ifstream sourceFile("GLinterop.cl");
+    std::ifstream sourceFile("openclkernels.cl");
     std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
                            (std::istreambuf_iterator<char>()));
     cl::Program::Sources source(
@@ -143,14 +145,13 @@ bool NBody::Init(GLuint VBOIndex) {
     }
 
     // Make kernel
-    kernel_tex = cl::Kernel(program, "texture_kernel");
+    boundingbox = cl::Kernel(program, "BoundingBoxStage1");
+    boundingboxstage2 = cl::Kernel(program, "BoundingBoxStage2");
+    octree = cl::Kernel(program, "InitOctree");
+    centerofMass = cl::Kernel(program, "CalculateCenterOfMass");
+    barneshut = cl::Kernel(program, "BarnesHut");
+    positionupdate = cl::Kernel(program, "AddForces");
 
-    // Create Mem Objs
-    cl_tex_mem =
-        cl::Image2DGL(context, CL_MEM_WRITE_ONLY, GL_TEXTURE_2D, 0, texture);
-
-    // Query textures
-    performTexQuery();  // Just to check..
   } catch (cl::Error error) {
     std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
               << std::endl;
@@ -161,11 +162,11 @@ bool NBody::Init(GLuint VBOIndex) {
 void NBody::Start(
     const size_t particle_count,
     std::function<ParticleSetDescription(const size_t)> generating_func,
-    std::optional<const size_t> allocate_particle_count) {
+    const size_t allocate_particle_count) {
   ParticleSetDescription set = generating_func(particle_count);
   std::vector<glm::vec3> pos = set.first;
   std::vector<ParticleData> data = set.second;
-  size_t count = allocate_particle_count.value_or(0) + particle_count;
+  size_t count = allocate_particle_count + particle_count;
   pos.resize(count);
   data.resize(count);
 }

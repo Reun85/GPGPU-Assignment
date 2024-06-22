@@ -1,19 +1,20 @@
 #pragma once
 
-#define CL_TARGET_OPENCL_VERSION 200
-#define CL_HPP_TARGET_OPENCL_VERSION 00
-#define __NO_STD_VECTOR
-#define __CL_ENABLE_EXCEPTIONS
-#include <CL/cl_gl.h>
 #include <GL/glew.h>
 
-#include <CL/cl.hpp>
-#include <cstddef>
 #include <functional>
+
+#define __NO_STD_VECTOR
+#define __CL_ENABLE_EXCEPTIONS
+#define CL_TARGET_OPENCL_VERSION 200
+#define CL_HPP_TARGET_OPENCL_VERSION 00
+#include <cstddef>
+#include <exception>
 #include <glm/glm.hpp>
 #include <mutex>
-#include <optional>
 #include <vector>
+
+#include "CL/cl.hpp"
 
 static const int PARTICLE_COUNT = 4000;
 
@@ -47,11 +48,10 @@ class NBody {
   /// @param extra_allocate_particle_count: the additional space allocated on
   /// the GPU to allow the user to add in particles after the simulation has
   /// started.
-  void Start(
-      const size_t particle_count = PARTICLE_COUNT,
-      std::function<ParticleSetDescription(const size_t)> generating_func =
-          UniformLayout,
-      std::optional<const size_t> extra_allocate_particle_count = std::nullopt);
+  void Start(const size_t particle_count = PARTICLE_COUNT,
+             std::function<ParticleSetDescription(const size_t)>
+                 generating_func = UniformLayout,
+             const size_t extra_allocate_particle_count = 0);
 
   // Clear Buffers
   // NOTE: MUST BE CALLED BEFORE CLEARING OpenGL Buffers!
@@ -85,7 +85,13 @@ class NBody {
   //          │                           CL                            │
   //          ╰─────────────────────────────────────────────────────────╯
   cl::Kernel boundingbox;
+  cl::Kernel boundingboxstage2;
   cl::Kernel octree;
+  cl::Kernel centerofMass;
   cl::Kernel barneshut;
   cl::Kernel positionupdate;
+
+  cl::Context context;
+  cl::CommandQueue command_queue;
+  cl::Program program;
 };
