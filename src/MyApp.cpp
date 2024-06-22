@@ -251,12 +251,9 @@ void CMyApp::InitGeometry() {
   // Create and bind a Vertex Buffer Object (VBO)
   glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  std::vector<vec3> vertices(count);
-  glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3),
-               vertices.data(), GL_STATIC_DRAW);
 
   // Specify the layout of the vertex data
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3),
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3),
                         reinterpret_cast<const void *>(
                             0));  // a 0. indexű attribútum hol kezdődik a
   glEnableVertexAttribArray(0);
@@ -266,14 +263,6 @@ void CMyApp::InitGeometry() {
 
   // Skybox
   InitSkyboxGeometry();
-}
-void CMyApp::SetParticles(const std::vector<vec3> &vertices) {
-  glBindVertexArray(VAO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(glm::vec3),
-                  vertices.data());
-  glBindVertexArray(0);
-  count = vertices.size();
 }
 
 void CMyApp::Render() {

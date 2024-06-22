@@ -15,7 +15,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 include_directories(src/includes)
-include_directories(src/vendor/OpenCL)
+
+
+set(OPENCL_VENDOR_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/vendor/OpenCL")
+
+
 
 project(${PROJECT_NAME} VERSION 0.1.0)
 
@@ -28,17 +32,17 @@ file(GLOB_RECURSE GLSL_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.glsl" "${SOURCE_
 file(GLOB_RECURSE ASSETS CONFIGURE_DEPENDS "${SOURCE_DIR}/Assets/**")
 
 function(copy_files_relative_to_src)
-        foreach(FILE ${ARGN})
-                # Extract the relative path of the file from the source directory
-                file(RELATIVE_PATH REL_PATH ${SOURCE_DIR} ${FILE})
-                # Construct the destination path
-                set(DEST_PATH "${DESTINATION_DIR}/${REL_PATH}")
-                # Create the necessary directories in the destination
-                get_filename_component(DEST_DIR "${DEST_PATH}" DIRECTORY)
-                file(MAKE_DIRECTORY "${DEST_DIR}")
-                # Copy the file to the destination
-                file(COPY "${FILE}" DESTINATION "${DEST_DIR}")
-        endforeach()
+  foreach(FILE ${ARGN})
+    # Extract the relative path of the file from the source directory
+    file(RELATIVE_PATH REL_PATH ${SOURCE_DIR} ${FILE})
+    # Construct the destination path
+    set(DEST_PATH "${DESTINATION_DIR}/${REL_PATH}")
+    # Create the necessary directories in the destination
+    get_filename_component(DEST_DIR "${DEST_PATH}" DIRECTORY)
+    file(MAKE_DIRECTORY "${DEST_DIR}")
+    # Copy the file to the destination
+    file(COPY "${FILE}" DESTINATION "${DEST_DIR}")
+  endforeach()
 endfunction()
 
 copy_files_relative_to_src(${ASSETS})
@@ -69,3 +73,10 @@ target_link_libraries(${PROJECT_NAME}
 
 find_package(SDL2_image CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::SDL2_image>,SDL2_image::SDL2_image,SDL2_image::SDL2_image-static>)
+
+find_package(OpenCL REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
+
+# add_subdirectory(vendor/OpenCL)
+# #
+# target_link_libraries(${PROJECT_NAME} PRIVATE OpenCLLib "-std=c++11")

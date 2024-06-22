@@ -4,9 +4,12 @@
 #include <GL/gl.h>
 #include <SDL_video.h>
 
+#include <fstream>
 #include <mutex>
-#include <oclutils.hpp>
+// #include <oclutils.hpp>
+#include <iostream>
 #include <random>
+#include <vector>
 using namespace cl;
 void NBody::TryAndWriteData() {
   bool update = false;
@@ -131,8 +134,11 @@ bool NBody::Init(GLuint VBOIndex) {
     std::ifstream sourceFile("openclkernels.cl");
     std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
                            (std::istreambuf_iterator<char>()));
-    cl::Program::Sources source(
-        1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
+
+    cl::Program::Sources source;
+    source.push_back({sourceCode.c_str(), sourceCode.length()});
+    // cl::Program::Sources source(
+    //     1, std::make_pair(sourceCode.c_str(), sourceCode.length() + 1));
 
     // Make program of the source code in the context
     program = cl::Program(context, source);
@@ -153,7 +159,7 @@ bool NBody::Init(GLuint VBOIndex) {
     positionupdate = cl::Kernel(program, "AddForces");
 
   } catch (cl::Error error) {
-    std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
+    std::cout << error.what() << "(" << gluErrorString(error.err()) << ")"
               << std::endl;
     return false;
   }

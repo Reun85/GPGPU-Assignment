@@ -18,7 +18,6 @@
 
 #include "Camera.h"
 #include "SUpdateInfo.h"
-#include "cpunbody/Vec3.hpp"
 
 class CMyApp {
  public:
@@ -39,8 +38,6 @@ class CMyApp {
   void MouseUp(const SDL_MouseButtonEvent &);
   void MouseWheel(const SDL_MouseWheelEvent &);
   void Resize(int, int);
-
-  void SetParticles(const std::vector<vec3> &particles);
 
   GLuint GetVBOAddress() { return VBO; }
 
