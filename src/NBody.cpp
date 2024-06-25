@@ -7,6 +7,7 @@
 #include <windows.h>
 
 #include <CL/opencl.hpp>
+#include <glm/matrix.hpp>
 #include <iostream>
 #include <vector>
 
@@ -36,8 +37,7 @@ std::ostream& operator<<(std::ostream& os, const ParticleData& pd) {
 std::ostream& operator<<(std::ostream& os, const Node& n) {
   os << "Node: {" << std::endl;
   os << "Center of mass: " << n.center_of_mass.x << " " << n.center_of_mass.y
-     << " "
-     << n.center_of_mass.z << std::endl;
+     << " " << n.center_of_mass.z << std::endl;
   os << "Mass: " << n.center_of_mass.w << std::endl;
   os << "Region size: " << n.region_size << std::endl;
   os << "Children: [ ";
@@ -62,53 +62,12 @@ std::ostream& operator<<(std::ostream& os, const Node& n) {
 }
 
 #include <fstream>
+#include <glm/ext/matrix_transform.hpp>
 #include <iostream>
 #include <mutex>
 #include <oclutils.hpp>
 #include <random>
 #include <vector>
-using namespace cl;
-bool NBody::TryAndWriteData() {
-  bool update = false;
-  {
-    std::lock_guard<std::mutex> done_lock(m_done_mutex);
-    if (m_newdata && m_writing_mutex.try_lock()) {
-      m_newdata = false;
-      update = true;
-    }
-    // Let go of the lock as early as possible
-  }
-  // We have new data and successfully locked m_writing_mutex
-  if (update) {
-#ifdef DEBUG
-    std::cout << "UPDATING DATA" << std::endl;
-#endif
-    try {
-      std::vector<cl::Event> ev1(1);
-      std::vector<cl::Event> ev2(1);
-      std::vector<cl::Event> ev3(1);
-      // copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr,
-      // &ev1[0]);
-      //  copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos,
-      //  0, 0,
-      //                                      particle_count *
-      //                                      sizeof(glm::vec3), &ev1, &ev2[0]);
-      //  copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
-      copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr, &ev1[0]);
-      copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos, 0, 0,
-                                           particle_count * sizeof(cl_float4),
-                                           &ev1, &ev2[0]);
-      copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
-      // cl::WaitForEvents(ev3);
-    } catch (cl::Error error) {
-      std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
-                << std::endl;
-      std::exit(1);
-    }
-    m_writing_mutex.unlock();
-  }
-  return update;
-}
 
 ParticleSetDescription UniformLayout(const size_t size,
                                      const float default_mass) {
@@ -140,14 +99,18 @@ ParticleSetDescription UniformLayout(const size_t size,
   return std::make_pair(particles, particle_data);
 }
 
-ParticleSetDescription Galaxy(const size_t size,
-                                  const float default_mass) {
-    const glm::vec3 g_center = glm::vec3(0, 0, 0);
-    const glm::vec3 g_velocity = glm::vec3(0, 0, 0);
+ParticleSetDescription GalaxiesClashing(const size_t size,
+                                        const float default_mass) {
+  const glm::vec3 g1_center = glm::vec3(3, 3, 3);
+  const glm::vec3 g2_center = -g1_center;
+  // Pulled towards this =>
+  const glm::vec3 g_center = glm::vec3(0, 0, 0);
 
+  const glm::vec3 g1_velocity = (g2_center - g1_center) * 0.01f;
+  const glm::vec3 g2_velocity = glm::vec3(0);
 
   std::vector<cl_float3> particles;
-    std::vector<ParticleData> particle_data;
+  std::vector<ParticleData> particle_data;
   particles.reserve(size);
   particle_data.reserve(size);
 
@@ -155,37 +118,101 @@ ParticleSetDescription Galaxy(const size_t size,
   std::normal_distribution<float> distribution(0.0, 1.0);
 
   float PI = 3.14159265359;
+  float r = distribution(generator) *  PI;
+  for (size_t i = 0; i < size / 2; ++i) {
+    float rng1 = distribution(generator) * 2.f * PI;
+    float rng2 = distribution(generator);
+    float rng3 = distribution(generator);
+    float rng4 = distribution(generator);
+    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * default_mass; 
+    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
+                               sin(rng1) * rng2 * 1.0f);
+    glm::mat4 rotationMatrix =
+        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
+    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g1_center;
+
+    glm::vec3 tang_vel = glm::vec3(glm::normalize(
+        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g1_center)));
+    float dis = glm::distance(glm::vec3(_pos), g1_center);
+    glm::vec3 rnd_vel =
+        tang_vel * (dis)*25.f;
+    rnd_vel /= 100;
+
+    rnd_vel += g1_velocity;
+
+    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
+    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
+  }
+   r = distribution(generator) * PI;
+  for (size_t i = 0; i < size-size / 2; ++i) {
+    float rng1 = distribution(generator) * 2.f * PI;
+    float rng2 = distribution(generator);
+    float rng3 = distribution(generator);
+    float rng4 = distribution(generator);
+    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * default_mass*0.25f;
+    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
+                               sin(rng1) * rng2 * 1.0f);
+    glm::mat4 rotationMatrix =
+        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
+    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g2_center;
+
+    glm::vec3 tang_vel = glm::vec3(glm::normalize(
+        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g2_center)));
+    float dis = glm::distance(glm::vec3(_pos), g2_center);
+    glm::vec3 rnd_vel =
+       tang_vel * (dis)*25.f;
+    rnd_vel /= 100;
+
+    rnd_vel += g2_velocity;
+
+    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
+    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
+  }
+  return std::make_pair(particles, particle_data);
+}
+
+ParticleSetDescription Galaxy(const size_t size, const float default_mass) {
+  const glm::vec3 g_center = glm::vec3(0, 0, 0);
+  const glm::vec3 g_velocity = glm::vec3(0, 0, 0);
+
+  std::vector<cl_float3> particles;
+  std::vector<ParticleData> particle_data;
+  particles.reserve(size);
+  particle_data.reserve(size);
+
+  std::default_random_engine generator;
+  std::normal_distribution<float> distribution(0.0, 1.0);
+
+  float PI = 3.14159265359;
+  float r = distribution(generator) * PI;
   for (size_t i = 0; i < size; ++i) {
     float rng1 = distribution(generator) * 2.f * PI;
     float rng2 = distribution(generator);
     float rng3 = distribution(generator);
     float rng4 = distribution(generator);
-    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f)*7500.0f;  // 0.5 ~ 1.0
-    glm::vec4 _pos = glm::vec4(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
-                                  sin(rng1) * rng2 * 1.0f, rng4);
-    _pos += glm::vec4(g_center, 0.f);  // galaxy 1 center
+    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * 7500.0f;  // 3750 ~ 7500
+    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
+                               sin(rng1) * rng2 * 1.0f);
+    glm::mat4 rotationMatrix =
+        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
+    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g_center;
 
-    float r = 1 - distribution(generator) / 10.0f;
-    glm::vec3 tang_vel =
-        glm::vec3(glm::normalize(glm::cross(glm::vec3(0, 1, 0),
-                                            glm::vec3(_pos) - g_center))
-                  );
+    glm::vec3 tang_vel = glm::vec3(glm::normalize(
+        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g_center)));
     float dis = glm::distance(glm::vec3(_pos), g_center);
-    glm::vec3 rnd_vel = tang_vel * (dis)*25.f;
+    glm::vec3 rnd_vel =
+        tang_vel * (dis)*25.f;
     rnd_vel /= 100;
 
-    rnd_vel += g_velocity;  // galaxy 1 center
+    rnd_vel += g_velocity;
 
- particles.push_back({{ _pos.x, _pos.y, _pos.z, _pos.w }});
-	particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z},
-        							  {{0, 0, 0}}});
-
-
-        
+    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
+    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
   }
   return std::make_pair(particles, particle_data);
 }
 
+using namespace cl;
 NBody::NBody() {}
 NBody::~NBody() {}
 
@@ -461,7 +488,7 @@ void NBody::Calculate(NBodyTimer& timer) {
   std::vector<cl::Event> ev2(1);
   std::vector<cl::Event> ev3(1);
   std::vector<cl::Event> ev4(1);
-  std::vector<cl::Event> ev42(1);
+  std::vector<cl::Event> ev51(1);
   std::vector<cl::Event> ev5(1);
   std::vector<cl::Event> ev6(1);
   std::vector<cl::Event> ev7(1);
@@ -504,10 +531,10 @@ void NBody::Calculate(NBodyTimer& timer) {
 
     command_queue.enqueueNDRangeKernel(centerofMass, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1), &ev4,
-                                       &ev42[0]);
+                                       &ev51[0]);
     command_queue.enqueueNDRangeKernel(DivideByMass, cl::NullRange,
-                                       cl::NDRange(divide_by_mass_threads), cl::NullRange, &ev42,
-                                       &ev5[0]);
+                                       cl::NDRange(divide_by_mass_threads),
+                                       cl::NullRange, &ev51, &ev5[0]);
     command_queue.enqueueNDRangeKernel(
         barneshut, cl::NullRange,
         cl::NDRange(global_work_size_from_item_per_thread(
@@ -544,9 +571,9 @@ void NBody::Calculate(NBodyTimer& timer) {
     m_newdata = true;
     m_done_mutex.unlock();
 
-
     cl::WaitForEvents(evread);
-    std::cout << "Used nodes: " << usedNodes << " Allocated: "<<allocatedNodes<< std::endl;
+    std::cout << "Used nodes: " << usedNodes << " Allocated: " << allocatedNodes
+              << std::endl;
     if (usedNodes > allocatedNodes) {
       std::cout << "Used more nodes than allocated, exiting" << std::endl;
       std::exit(1);
@@ -563,6 +590,7 @@ void NBody::Calculate(NBodyTimer& timer) {
   printTime(ev3[0], "initOctree");
   printTime(ev4[0], "buildOctree");
   printTime(ev5[0], "centerofMass");
+  printTime(ev51[0], "dividecenterofmass");
   printTime(ev6[0], "barneshut");
   printTime(ev7[0], "positionupdate");
 }
@@ -600,4 +628,46 @@ void NBody::Start(
               << std::endl;
     std::exit(1);
   }
+}
+
+bool NBody::TryAndWriteData() {
+  bool update = false;
+  {
+    std::lock_guard<std::mutex> done_lock(m_done_mutex);
+    if (m_newdata && m_writing_mutex.try_lock()) {
+      m_newdata = false;
+      update = true;
+    }
+    // Let go of the lock as early as possible
+  }
+  // We have new data and successfully locked m_writing_mutex
+  if (update) {
+#ifdef DEBUG
+    std::cout << "UPDATING DATA" << std::endl;
+#endif
+    try {
+      std::vector<cl::Event> ev1(1);
+      std::vector<cl::Event> ev2(1);
+      std::vector<cl::Event> ev3(1);
+      // copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr,
+      // &ev1[0]);
+      //  copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos,
+      //  0, 0,
+      //                                      particle_count *
+      //                                      sizeof(glm::vec3), &ev1, &ev2[0]);
+      //  copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
+      copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr, &ev1[0]);
+      copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos, 0, 0,
+                                           particle_count * sizeof(cl_float4),
+                                           &ev1, &ev2[0]);
+      copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
+      // cl::WaitForEvents(ev3);
+    } catch (cl::Error error) {
+      std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
+                << std::endl;
+      std::exit(1);
+    }
+    m_writing_mutex.unlock();
+  }
+  return update;
 }

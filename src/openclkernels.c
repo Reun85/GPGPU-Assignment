@@ -27,7 +27,7 @@ __kernel void BarnesHut(__global const float4* particles_pos,
   const int start = global_id * items_per_work_group;
 
   const int end = min(start + items_per_work_group, particle_count);
-  int stack[1024];
+  int stack[512];
   int stackSize = 0;
   for (int id = start; id < end; id++) {
     float4 particle_pos = particles_pos[id];
@@ -45,7 +45,7 @@ __kernel void BarnesHut(__global const float4* particles_pos,
     while (stackSize > 0) {
       const Node* node = &nodes[stack[--stackSize]];
 
-      if (node->center_of_mass.w == 0) continue;
+      if (node->center_of_mass.w < 0.1) continue;
 
       const float3 delta = node->center_of_mass.xyz - particle_pos.xyz;
       const float distance_squared =
@@ -61,8 +61,7 @@ __kernel void BarnesHut(__global const float4* particles_pos,
             (G * particle_pos.w * node->center_of_mass.w) / distance_squared;
         float3 add = delta * F / sqrt(distance_squared);
         force += add;
-      } else if(node->isLeaf == isLeaf_PARENT){
-          
+      } else if (node->isLeaf == isLeaf_PARENT) {
         for (int j = 0; j < 8; ++j) {
           stack[stackSize++] = node->children[j];
         }
@@ -276,10 +275,13 @@ __kernel void BuildOctree(__global const float4* particles_pos,
                           __global const float3* boundingbox_max,
                           const int particle_count, const int start_depth,
                           __global int* itr, const int items_per_work_item) {
-  int global_id = get_global_id(0);
+  const int enter_depth = 7;
+  const int STACKSIZE = 8;
 
-  int start_box_index = global_id * items_per_work_item;
-  int end_box_index =
+  const int global_id = get_global_id(0);
+
+  const int start_box_index = global_id * items_per_work_item;
+  const int end_box_index =
       min(start_box_index + items_per_work_item, (1 << (3 * start_depth)));
 
   size_t stride = 1 << start_depth;
@@ -316,8 +318,6 @@ __kernel void BuildOctree(__global const float4* particles_pos,
                  k * start_depth_size.z) +
         start_depth_size * 0.5f;
 
-    const int STACKSIZE = 8;
-
     int stack[STACKSIZE];
     int stackSize = 0;
 
@@ -340,7 +340,7 @@ __kernel void BuildOctree(__global const float4* particles_pos,
         current_block_center = start_depth_center;
         const float4 particle_pos = particles_pos[stack[p3]];
         current_block_size = start_depth_size / 2.0f;
-        for (int depth = 6; depth > 0; depth--) {
+        for (int depth = 0; depth < enter_depth; depth++) {
           // Locate the particle in the box
           float3 octant =
               (float3)(particle_pos.x > current_block_center.x ? 1.0f : -1.0f,
@@ -387,7 +387,6 @@ __kernel void BuildOctree(__global const float4* particles_pos,
                 current_block_center + current_block_size * octant;
             current = &nodes[current->children[index]];
           } else if (current->isLeaf == isLeaf_EMPTY) {
-
             size_t previtr = atomic_add(itr, 8);
 
             for (int m = 0; m < 8; m++) {
@@ -491,7 +490,8 @@ __kernel void BuildOctree(__global const float4* particles_pos,
   }
 }
 
-//__kernel void CalculateCenterOfMass(__global Node* nodes, const int start_depth,
+//__kernel void CalculateCenterOfMass(__global Node* nodes, const int
+//start_depth,
 //                                    __global int* itr) {
 //  size_t global_id = get_global_id(0);
 //
@@ -533,17 +533,16 @@ __kernel void CalculateCenterOfMass(__global Node* nodes, const int start_depth,
     n->center_of_mass += nodes[n->children[j]].center_of_mass;
   }
 
-  //for (size_t i = 0; i < *itr; ++i) {
-  //  nodes[i].center_of_mass =
-  //      (float4)(nodes[i].center_of_mass.xyz / nodes[i].center_of_mass.w,
-  //               nodes[i].center_of_mass.w);
-  //}
+  // for (size_t i = 0; i < *itr; ++i) {
+  //   nodes[i].center_of_mass =
+  //       (float4)(nodes[i].center_of_mass.xyz / nodes[i].center_of_mass.w,
+  //                nodes[i].center_of_mass.w);
+  // }
 }
-__kernel void DivideCentersByMass(__global Node* nodes, __global int* itr
-                                    ) {
+__kernel void DivideCentersByMass(__global Node* nodes, __global int* itr) {
   const int global_id = get_global_id(0);
   const int global_size = get_global_size(0);
-  const int item_per_thread =1+ *itr / global_size;
+  const int item_per_thread = 1 + *itr / global_size;
   const int start_ind = global_id * item_per_thread;
   const int end_ind = min(start_ind + item_per_thread, *itr);
 
@@ -553,6 +552,3 @@ __kernel void DivideCentersByMass(__global Node* nodes, __global int* itr
                  nodes[i].center_of_mass.w);
   }
 }
-
-
-

@@ -14,7 +14,7 @@
 #include <mutex>
 #include <vector>
 
-static const int PARTICLE_COUNT = 100000;
+static const int PARTICLE_COUNT = 1e+4;
 
 class NBodyTimer {
  public:
@@ -38,7 +38,6 @@ struct ParticleData {
   // TODO: measure this.
   cl_float3 force;
 
-
   bool operator==(const ParticleData& rhs) {
     return velocity.x == rhs.velocity.x && velocity.y == rhs.velocity.y &&
            velocity.z == rhs.velocity.z && force.x == rhs.force.x &&
@@ -61,6 +60,7 @@ typedef struct {
 using ParticleSetDescription =
     std::pair<std::vector<cl_float4>, std::vector<ParticleData>>;
 
+ParticleSetDescription GalaxiesClashing(const size_t size, const float);
 ParticleSetDescription Galaxy(const size_t size, const float);
 ParticleSetDescription UniformLayout(const size_t size, const float);
 
@@ -73,14 +73,13 @@ class NBody {
   bool Init(GLuint VBOIndex, const size_t particle_count,
             const size_t extra_allocate_particle_count = 0);
 
-  /// \brief yes
   /// Generates the particles and moves them to the GPU.
   /// @param particle_count: the number passed to generating func
   /// @param extra_allocate_particle_count: the additional space allocated on
   /// the GPU to allow the user to add in particles after the simulation has
   /// started.
   void Start(std::function<ParticleSetDescription(const size_t, const float)>
-                 generating_func = Galaxy);
+                 generating_func =GalaxiesClashing);
 
   // Clear Buffers
   // NOTE: MUST BE CALLED BEFORE CLEARING OpenGL Buffers!
@@ -104,14 +103,15 @@ class NBody {
   size_t particle_count;
   size_t allocated_particle_count;
   std::function<ParticleSetDescription(const size_t)> generating_function;
-  float distanceThreshold = 0.2f;
+  float distanceThreshold = 0.1f;
   float eps = 1e-3f;
-  float gravitational_constant = 6.67430e-11f;
+  //float gravitational_constant = 6.67430e-11f;
+  float gravitational_constant = 6.67430e-4f;
   std::mutex m_sim_data_mutex;
 
-  size_t START_DEPTH =4;
+  size_t START_DEPTH = 4;
 
-  float default_mass = 5000;
+  float default_mass = 50000;
 
   //          ╭─────────────────────────────────────────────────────────╮
   //          │                  Writing communication                  │
@@ -138,7 +138,6 @@ class NBody {
   const int center_of_mass_items_per_thread = 8;
   cl::Kernel centerofMass;
 
-
   const int divide_by_mass_threads = 512;
   cl::Kernel DivideByMass;
 
@@ -148,9 +147,6 @@ class NBody {
   const int position_update_items_per_thread = 16;
   const float timestep = 0.1f;
   cl::Kernel positionupdate;
-
-
-
 
   cl::Context context;
   // Simulation command_queue

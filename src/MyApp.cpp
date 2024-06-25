@@ -224,9 +224,9 @@ bool CMyApp::Init() {
 
   // kamera
   m_camera.SetView(
-      glm::vec3(0.0, 7.0, 7.0),   // honnan nézzük a színteret	   - eye
-      glm::vec3(0.0, 0.0, 0.0),   // a színtér melyik pontját nézzük - at
-      glm::vec3(0.0, 1.0, 0.0));  // felfelé mutató irány a világban - up
+      glm::vec3(0.0, 12.0, 20.0),  // honnan nézzük a színteret	   - eye
+      glm::vec3(0.0, 0.0, 0.0),    // a színtér melyik pontját nézzük - at
+      glm::vec3(0.0, 1.0, 0.0));   // felfelé mutató irány a világban - up
 
   return true;
 }

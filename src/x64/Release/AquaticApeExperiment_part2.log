@@ -1,10 +1,21 @@
 ﻿  NBody.cpp
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(157,12): warning C4305: 'initializing': truncation from 'double' to 'float'
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(445,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(392,10): warning C4101: 'temp': unreferenced local variable
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.h(17,35): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  (compiling source file 'NBody.cpp')
+  
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(120,12): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(186,12): warning C4305: 'initializing': truncation from 'double' to 'float'
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(472,14): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.cpp(419,10): warning C4101: 'temp': unreferenced local variable
+  main.cpp
+C:\Users\i7\source\vcpkg\installed\x64-windows\include\CL\opencl.hpp(6924,15): warning C4996: 'clSetProgramReleaseCallback': was declared deprecated
+  (compiling source file 'main.cpp')
+  
+C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\NBody.h(17,35): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  (compiling source file 'main.cpp')
+  
   Generating code
-  54 of 1518 functions ( 3.6%) were compiled, the rest were copied from previous compilation.
+  3 of 1525 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    40 functions had inline decision re-evaluated but remain unchanged
+    0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
   AquaticApeExperiment_part2.vcxproj -> C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Release\NBody sim.exe
