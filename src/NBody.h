@@ -100,7 +100,6 @@ class NBody {
   // Testing
   std::vector<cl_float3> test_positions;
   std::vector<ParticleData> test_data;
-  cl::Buffer tempBuffer;
 
   //          ╭─────────────────────────────────────────────────────────╮
   //          │                  Simulation Constants                   │

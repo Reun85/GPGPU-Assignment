@@ -272,8 +272,8 @@ __kernel void BuildOctree(__global const float3* particles_pos,
                           __global const float3* boundingbox_min,
                           __global const float3* boundingbox_max,
                           const int particle_count, const int start_depth,
-                          __global int* itr, const int items_per_work_item,
-                          __global int* temp) {
+                          __global int* itr, const int items_per_work_item
+                          ) {
   int global_id = get_global_id(0);
 
   int start_box_index = global_id * items_per_work_item;
@@ -325,9 +325,7 @@ __kernel void BuildOctree(__global const float3* particles_pos,
       if (!isinside(current_block_center - current_block_size,
                     current_block_center + current_block_size, particle_pos)) {
         done = true;
-      } else {
-        atomic_add(temp, particle_data->mass);
-      }
+      } 
       while (!done) {
         // Locate the particle in the box
         float3 octant =

@@ -279,7 +279,6 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
     globalMaxBuffer =
         cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_float3), NULL);
     itrBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL);
-    tempBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL);
 
     GLbuffers.push_back(openGLparticlepos);
 
@@ -321,7 +320,6 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
     buildOctree.setArg(6, static_cast<const int>(START_DEPTH));
     buildOctree.setArg(7, itrBuffer);
     buildOctree.setArg(8, octree_items_per_thread);
-    buildOctree.setArg(9, tempBuffer);
 
     centerofMass = cl::Kernel(program, "CalculateCenterOfMass");
     centerofMass.setArg(0, Nodes);
