@@ -42,21 +42,6 @@
     <ClCompile Include="includes\ObjParser.cpp">
       <Filter>GL Utils</Filter>
     </ClCompile>
-    <ClCompile Include="cpunbody\BoundingBox.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cpunbody\Nbody.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cpunbody\Octree.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cpunbody\Octreostream.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cpunbody\BarnesHut.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="NBody.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -83,64 +68,13 @@
     <ClInclude Include="includes\FallingObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cpunbody\BoundingBox.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpunbody\Nbody.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpunbody\Octree.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpunbody\Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="includes\SUpdateInfo.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpunbody\BarnesHut.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="cpunbody\Vec3.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\oclutils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="NBody.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d9_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d11_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_gl.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_gl_ext.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\cl_platform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vendor\OpenCL\CL\opencl.h">
+    <ClInclude Include="vendor\oclutils.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -155,6 +89,6 @@
     <None Include="imgui.ini" />
     <None Include="shaders\Vert_Point.vert" />
     <None Include="shaders\Frag_axes.frag" />
-    <None Include="openclkernels.cl" />
+    <None Include="openclkernels.c" />
   </ItemGroup>
 </Project>

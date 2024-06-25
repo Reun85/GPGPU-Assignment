@@ -41,12 +41,15 @@ class CMyApp {
 
   GLuint GetVBOAddress() { return VBO; }
 
+  void UpdatedParticles();
+
  protected:
   void SetupDebugCallback();
 
   // ── Data ────────────────────────────────────────────────────────────
   float m_ElapsedTimeInSec = 0.0f;
-  size_t count = 0;
+  size_t particle_count = 0;
+  bool needstoupdate = false;
 
   // ── Camera ──────────────────────────────────────────────────────────
   Camera m_camera;

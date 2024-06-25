@@ -19,7 +19,7 @@ class Camera {
   inline glm::mat4 GetProj() const { return m_matProj; }
   inline glm::mat4 GetViewProj() const { return m_matViewProj; }
 
-  void Update(float _deltaTime);
+  bool Update(float _deltaTime);
 
   void SetView(glm::vec3 _eye, glm::vec3 _at, glm::vec3 _up);
   void LookAt(glm::vec3 _at);

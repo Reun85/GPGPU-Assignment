@@ -1,7 +1,7 @@
 // GLEW
 #define CL_HPP_ENABLE_EXCEPTIONS
-#define CL_TARGET_OPENCL_VERSION 200
-#define CL_HPP_TARGET_OPENCL_VERSION 200
+#define CL_TARGET_OPENCL_VERSION 300
+#define CL_HPP_TARGET_OPENCL_VERSION 300
 
 #include <CL/cl_gl.h>
 #include <GL/glew.h>
@@ -23,9 +23,12 @@
 #include "MyApp.h"
 #include "NBody.h"
 void SecondThreadFunction(NBody& body, bool* quit) {
-  while (!(*quit)) {
-    body.Calculate();
-  }
+  NBodyTimer timer;
+  const bool only_once = false;
+  do {
+    body.Calculate(timer);
+  } while (!(*quit) && !only_once);
+
   std::cout << "Other thread stopping" << std::endl;
 }
 
@@ -188,7 +191,7 @@ int main(int argc, char* args[]) {
       return 1;
     }
 
-    if (!nbody.Init(app.GetVBOAddress())) {
+    if (!nbody.Init(app.GetVBOAddress(), PARTICLE_COUNT)) {
       SDL_LogError(
           SDL_LOG_CATEGORY_ERROR,
           "[nbody.Init] Error during the initialization of the application!");
@@ -270,7 +273,10 @@ int main(int argc, char* args[]) {
            static_cast<float>(CurrentTick - LastTick) / 1000.0f};
       LastTick = CurrentTick;  // Mentsük el utolsóként az aktuális "tick"-et!
 
-      nbody.TryAndWriteData();
+      bool updateddata = nbody.TryAndWriteData();
+      if (updateddata) {
+        app.UpdatedParticles();
+      }
       app.Update(updateInfo);
       app.Render();
 

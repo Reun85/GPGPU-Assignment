@@ -64,7 +64,7 @@ void Camera::SetZFar(const float _zf) noexcept {
   m_projectionDirty = true;
 }
 
-void Camera::Update(float _deltaTime) {
+bool Camera::Update(float _deltaTime) {
   if (m_goForward != 0.0f || m_goRight != 0.0f || m_goUp != 0.0f) {
     glm::vec3 deltaPosition =
         (m_goForward * m_forward + m_goRight * m_right + m_goUp * m_up) *
@@ -86,6 +86,7 @@ void Camera::Update(float _deltaTime) {
     m_matViewProj = m_matProj * m_viewMatrix;
     m_viewDirty = false;
     m_projectionDirty = false;
+    return true;
   }
 }
 

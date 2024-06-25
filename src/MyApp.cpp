@@ -12,7 +12,7 @@
 #include "ParametricSurfaceMesh.hpp"
 #include "SDL_GLDebugMessageCallback.h"
 
-CMyApp::CMyApp(int PARTICLE_SIZE) { count = PARTICLE_SIZE; }
+CMyApp::CMyApp(int PARTICLE_SIZE) { particle_count = PARTICLE_SIZE; }
 
 CMyApp::~CMyApp() {}
 
@@ -239,11 +239,16 @@ void CMyApp::Clean() {
 
 void CMyApp::Update(const SUpdateInfo &updateInfo) {
   m_ElapsedTimeInSec = updateInfo.ElapsedTimeInSec;
-
-  m_camera.Update(updateInfo.DeltaTimeInSec);
+  bool updated = m_camera.Update(updateInfo.DeltaTimeInSec);
+  if (updated) {
+    needstoupdate = true;
+  }
   // A table flip megnyomása után az objektumokat frissítjük.
 }
 
+void CMyApp::UpdatedParticles() { needstoupdate = true; }
+
+#include <CL/opencl.hpp>
 void CMyApp::InitGeometry() {
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
@@ -251,9 +256,9 @@ void CMyApp::InitGeometry() {
   // Create and bind a Vertex Buffer Object (VBO)
   glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-  // Specify the layout of the vertex data
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3),
+  glBufferData(GL_ARRAY_BUFFER, particle_count * sizeof(cl_float3), NULL,
+               GL_STATIC_DRAW);  // Specify the layout of the vertex data
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float3),
                         reinterpret_cast<const void *>(
                             0));  // a 0. indexű attribútum hol kezdődik a
   glEnableVertexAttribArray(0);
@@ -266,39 +271,42 @@ void CMyApp::InitGeometry() {
 }
 
 void CMyApp::Render() {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  static constexpr bool drawaxes = false;
   //
   // Axes
   //
-  {
-    glBindVertexArray(0);
-    glUseProgram(m_programAxesID);
+  if (needstoupdate) {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    if (drawaxes) {
+      glBindVertexArray(0);
+      glUseProgram(m_programAxesID);
 
+      glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
+                         glm::value_ptr(glm::identity<glm::mat4>()));
+
+      glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
+                         glm::value_ptr(m_camera.GetViewProj()));
+
+      glDrawArrays(GL_LINES, 0, 6);
+
+      glUseProgram(0);
+    }
+
+    glUseProgram(m_programPointID);
+
+    // Bind the VAO and draw points
+    glBindVertexArray(VAO);
+    glPointSize(1.5);
     glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
                        glm::value_ptr(glm::identity<glm::mat4>()));
 
     glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
                        glm::value_ptr(m_camera.GetViewProj()));
+    glDrawArrays(GL_POINTS, 0, particle_count);
+    glBindVertexArray(0);
 
-    glDrawArrays(GL_LINES, 0, 6);
-
-    glUseProgram(0);
+    needstoupdate = false;
   }
-
-  glUseProgram(m_programPointID);
-
-  // Bind the VAO and draw points
-  glBindVertexArray(VAO);
-  glPointSize(1.5);
-  glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
-                     glm::value_ptr(glm::identity<glm::mat4>()));
-
-  glUniformMatrix4fv(ul("viewProj"), 1, GL_FALSE,
-                     glm::value_ptr(m_camera.GetViewProj()));
-  glDrawArrays(GL_POINTS, 0, count);
-  glBindVertexArray(0);
-
   //
   // skybox
   //
@@ -332,7 +340,7 @@ void CMyApp::Render() {
   //   glDepthFunc(GL_LEQUAL);
   //
   //   // - Rajzolas
-  //   glDrawElements(GL_TRIANGLES, m_SkyboxGPU.count, GL_UNSIGNED_INT,
+  //   glDrawElements(GL_TRIANGLES, m_SkyboxGPU.particle_count, GL_UNSIGNED_INT,
   //   nullptr);
   //
   //   glDepthFunc(prevDepthFnc);
@@ -421,4 +429,6 @@ void CMyApp::MouseWheel(const SDL_MouseWheelEvent &wheel) {
 void CMyApp::Resize(int _w, int _h) {
   glViewport(0, 0, _w, _h);
   m_camera.Resize(_w, _h);
+
+  needstoupdate = true;
 }

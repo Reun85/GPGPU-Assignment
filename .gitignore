@@ -1,6 +1,6 @@
 src/.vs
-build
-out
+/build/*
+/out/*
 .cache/clangd/index
 output.md
-output.md
+/old/*

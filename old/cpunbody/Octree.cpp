@@ -112,28 +112,7 @@ void Octree::Recalculate(std::vector<ParticlePos> &particles,
     }
   }
 
-  int prevprog = 0;
   for (size_t id = 0; id < std::pow(8, START_DEPTH); id++) {
-    float progress = static_cast<float>(id + 1) /
-                     static_cast<float>(std::pow(8, START_DEPTH));
-    int barWidth = 70;
-
-    int pos = (int)(barWidth * progress);
-    if (prevprog != pos) {
-      std::cout << "Octree [";
-      for (int i = 0; i < barWidth; ++i) {
-        if (i < pos)
-          std::cout << "=";
-        else if (i == pos)
-          std::cout << ">";
-        else
-          std::cout << " ";
-      }
-      std::cout << "] " << int(progress * 100.0) << " %\r";
-      std::cout.flush();
-    }
-    prevprog = pos;
-
     // Since the space is split into 8^START_DEPTH, we can extract the i, j, k
     // coordinates as such:
     size_t tmp = id;

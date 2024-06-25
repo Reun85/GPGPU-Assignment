@@ -10,27 +10,7 @@ void BarnesHut(std::vector<ParticlePos>& particles,
                NBodyTimer& timer, std::mutex& tolock) {
   const size_t numberOfGroups = (particles.size()) / (ParticlePerGroup);
 
-  int prevprog = 0;
   for (size_t local_id = 0; local_id < numberOfGroups; ++local_id) {
-    float progress =
-        static_cast<float>(local_id + 1) / static_cast<float>(numberOfGroups);
-    int barWidth = 70;
-
-    int pos = barWidth * progress;
-    if (prevprog != pos) {
-      std::cout << "Barnes-Hut [";
-      for (int i = 0; i < barWidth; ++i) {
-        if (i < pos)
-          std::cout << "=";
-        else if (i == pos)
-          std::cout << ">";
-        else
-          std::cout << " ";
-      }
-      std::cout << "] " << int(progress * 100.0) << " %\r";
-      std::cout.flush();
-    }
-    prevprog = pos;
     size_t start = local_id * ParticlePerGroup;
     size_t end = std::min(start + ParticlePerGroup, particles.size());
     for (size_t id = start; id < end; id++) {

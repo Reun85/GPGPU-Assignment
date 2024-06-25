@@ -46,11 +46,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)includes;T:\OCLPack\include\;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)includes;$(ProjectDir)vendor;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(ProjectDir)vendor;$(IncludePath);$(ProjectDir)includes;</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnableManifest>false</VcpkgEnableManifest>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -84,11 +87,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="cpunbody\BarnesHut.cpp" />
-    <ClCompile Include="cpunbody\BoundingBox.cpp" />
-    <ClCompile Include="cpunbody\Nbody.cpp" />
-    <ClCompile Include="cpunbody\Octree.cpp" />
-    <ClCompile Include="cpunbody\Octreostream.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="includes\SDL_GLDebugMessageCallback.cpp" />
     <ClCompile Include="main.cpp" />
@@ -98,12 +96,6 @@
     <ClCompile Include="NBody.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cpunbody\BarnesHut.h" />
-    <ClInclude Include="cpunbody\BoundingBox.h" />
-    <ClInclude Include="cpunbody\Nbody.h" />
-    <ClInclude Include="cpunbody\Octree.h" />
-    <ClInclude Include="cpunbody\Particle.h" />
-    <ClInclude Include="cpunbody\Vec3.hpp" />
     <ClInclude Include="includes\FallingObject.h" />
     <ClInclude Include="includes\SUpdateInfo.h" />
     <ClInclude Include="MyApp.h" />
@@ -113,22 +105,11 @@
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
     <ClInclude Include="NBody.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl.hpp" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d10_ext.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d11_ext.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_d3d9_ext.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_ext.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_gl.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_gl_ext.h" />
-    <ClInclude Include="vendor\OpenCL\CL\cl_platform.h" />
-    <ClInclude Include="vendor\OpenCL\CL\opencl.h" />
-    <ClInclude Include="vendor\OpenCL\oclutils.hpp" />
+    <ClInclude Include="vendor\oclutils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
-    <None Include="openclkernels.cl" />
+    <None Include="openclkernels.c" />
     <None Include="shaders\Frag_Lighting.frag" />
     <None Include="shaders\Frag_PosCol.frag" />
     <None Include="shaders\Frag_skybox.frag" />
