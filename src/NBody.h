@@ -14,7 +14,7 @@
 #include <mutex>
 #include <vector>
 
-static const int PARTICLE_COUNT = 400000;
+static const int PARTICLE_COUNT = 100000;
 
 class NBodyTimer {
  public:
@@ -38,33 +38,30 @@ struct ParticleData {
   // TODO: measure this.
   cl_float3 force;
 
-  cl_float mass;
-  cl_int padding[3];
 
   bool operator==(const ParticleData& rhs) {
     return velocity.x == rhs.velocity.x && velocity.y == rhs.velocity.y &&
            velocity.z == rhs.velocity.z && force.x == rhs.force.x &&
-           force.y == rhs.force.y && force.z == rhs.force.z && mass == rhs.mass;
+           force.y == rhs.force.y && force.z == rhs.force.z;
   }
   bool operator!=(const ParticleData& rhs) { return !(*this == rhs); }
 };
 
 typedef struct {
-  cl_float3 center_of_mass;
+  cl_float4 center_of_mass;
   cl_float3 region_size;
-  cl_int children[8];
-  cl_float mass;
   cl_int isLeaf;  // 0 = isLeaf, 1 = Parent, 2 = Empty
-  // Size is 72 bytes :c
-  cl_int padding[2];
+  cl_int children[8];
+  // Size is 68 bytes :c
+  cl_int padding[3];
   // This way size is 80, which matches the alignment of the largest member
   // float3(float4) of 16 bytes.
 } Node;
 
 using ParticleSetDescription =
-    std::pair<std::vector<cl_float3>, std::vector<ParticleData>>;
+    std::pair<std::vector<cl_float4>, std::vector<ParticleData>>;
 
-ParticleSetDescription EvenLayout(const size_t size, const float);
+ParticleSetDescription Galaxy(const size_t size, const float);
 ParticleSetDescription UniformLayout(const size_t size, const float);
 
 class NBody {
@@ -83,7 +80,7 @@ class NBody {
   /// the GPU to allow the user to add in particles after the simulation has
   /// started.
   void Start(std::function<ParticleSetDescription(const size_t, const float)>
-                 generating_func = UniformLayout);
+                 generating_func = Galaxy);
 
   // Clear Buffers
   // NOTE: MUST BE CALLED BEFORE CLEARING OpenGL Buffers!
@@ -98,7 +95,7 @@ class NBody {
  private:
   void doTesting();
   // Testing
-  std::vector<cl_float3> test_positions;
+  std::vector<cl_float4> test_positions;
   std::vector<ParticleData> test_data;
 
   //          ╭─────────────────────────────────────────────────────────╮
@@ -112,7 +109,7 @@ class NBody {
   float gravitational_constant = 6.67430e-11f;
   std::mutex m_sim_data_mutex;
 
-  size_t START_DEPTH = 3;
+  size_t START_DEPTH =4;
 
   float default_mass = 5000;
 
@@ -138,15 +135,22 @@ class NBody {
   const int octree_items_per_thread = 1;
   cl::Kernel buildOctree;
 
-  const int center_of_mass_items_per_thread = 16;
+  const int center_of_mass_items_per_thread = 8;
   cl::Kernel centerofMass;
 
-  const int barneshut_items_per_thread = 2;
+
+  const int divide_by_mass_threads = 512;
+  cl::Kernel DivideByMass;
+
+  const int barneshut_items_per_thread = 4;
   cl::Kernel barneshut;
 
   const int position_update_items_per_thread = 16;
   const float timestep = 0.1f;
   cl::Kernel positionupdate;
+
+
+
 
   cl::Context context;
   // Simulation command_queue
@@ -162,7 +166,6 @@ class NBody {
   cl::Buffer particlepos;
   cl::Buffer particledata;
   cl::Buffer Nodes;
-
   // Intermediate CL buffers
   cl::Buffer itrBuffer;
   cl::Buffer minValuesBuffer;

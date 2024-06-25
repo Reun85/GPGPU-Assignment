@@ -29,15 +29,16 @@ std::ostream& operator<<(std::ostream& os, const ParticleData& pd) {
   os << "ParticleData: {" << std::endl;
   os << "Velocity: " << pd.velocity << std::endl;
   os << "Force: " << pd.force << std::endl;
-  os << "Mass: " << pd.mass << std::endl;
   os << "}" << std::endl;
   return os;
 }
 
 std::ostream& operator<<(std::ostream& os, const Node& n) {
   os << "Node: {" << std::endl;
-  os << "Center of mass: " << n.center_of_mass << std::endl;
-  os << "Mass: " << n.mass << std::endl;
+  os << "Center of mass: " << n.center_of_mass.x << " " << n.center_of_mass.y
+     << " "
+     << n.center_of_mass.z << std::endl;
+  os << "Mass: " << n.center_of_mass.w << std::endl;
   os << "Region size: " << n.region_size << std::endl;
   os << "Children: [ ";
   for (int i = 0; i < 8; i++) {
@@ -95,7 +96,7 @@ bool NBody::TryAndWriteData() {
       //  copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
       copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr, &ev1[0]);
       copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos, 0, 0,
-                                           particle_count * sizeof(cl_float3),
+                                           particle_count * sizeof(cl_float4),
                                            &ev1, &ev2[0]);
       copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
       // cl::WaitForEvents(ev3);
@@ -116,12 +117,12 @@ ParticleSetDescription UniformLayout(const size_t size,
   empt.x = 0;
   empt.y = 0;
   empt.z = 0;
-  ParticleData def_data{empt, empt, default_mass, {0, 0, 0}};
+  ParticleData def_data{empt, empt};
   std::vector<ParticleData> particle_data(size, def_data);
   particles.reserve(size);
 
   std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0, 2.0);
+  std::normal_distribution<float> distribution(0.0, 1.0);
 
   for (size_t i = 0; i < size; ++i) {
     float x = distribution(generator);
@@ -131,6 +132,7 @@ ParticleSetDescription UniformLayout(const size_t size,
     t.x = x;
     t.y = y;
     t.z = z;
+    t.w = default_mass;
 
     particles.push_back(t);
   }
@@ -138,34 +140,48 @@ ParticleSetDescription UniformLayout(const size_t size,
   return std::make_pair(particles, particle_data);
 }
 
-ParticleSetDescription EvenLayout(const size_t count,
+ParticleSetDescription Galaxy(const size_t size,
                                   const float default_mass) {
-  std::vector<cl_float3> particles;
-  cl_float3 empt;
-  empt.x = 0;
-  empt.y = 0;
-  empt.z = 0;
-  ParticleData def_data{empt, empt, default_mass, {0, 0, 0}};
-  std::vector<ParticleData> particle_data(count, def_data);
-  const int num = std::ceil((std::cbrt(static_cast<float>(count)) - 1.) / 2.);
-  const size_t res = static_cast<size_t>(std::pow(num * 2 + 1, 3));
+    const glm::vec3 g_center = glm::vec3(0, 0, 0);
+    const glm::vec3 g_velocity = glm::vec3(0, 0, 0);
 
-  particles.reserve(res);
-  glm::vec3 offset(0.f, 0.f, 0.f);
-  glm::vec3 size(1.f, 1.f, 1.f);
-  for (int i = -num; i <= num; i++) {
-    for (int j = -num; j <= num; j++) {
-      for (int k = -num; k <= num; k++) {
-        glm::vec3 pos = offset + size * glm::vec3(static_cast<float>(i),
-                                                  static_cast<float>(j),
-                                                  static_cast<float>(k));
-        cl_float3 t;
-        t.x = pos.x;
-        t.y = pos.y;
-        t.z = pos.z;
-        particles.push_back(t);
-      }
-    }
+
+  std::vector<cl_float3> particles;
+    std::vector<ParticleData> particle_data;
+  particles.reserve(size);
+  particle_data.reserve(size);
+
+  std::default_random_engine generator;
+  std::normal_distribution<float> distribution(0.0, 1.0);
+
+  float PI = 3.14159265359;
+  for (size_t i = 0; i < size; ++i) {
+    float rng1 = distribution(generator) * 2.f * PI;
+    float rng2 = distribution(generator);
+    float rng3 = distribution(generator);
+    float rng4 = distribution(generator);
+    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f)*7500.0f;  // 0.5 ~ 1.0
+    glm::vec4 _pos = glm::vec4(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
+                                  sin(rng1) * rng2 * 1.0f, rng4);
+    _pos += glm::vec4(g_center, 0.f);  // galaxy 1 center
+
+    float r = 1 - distribution(generator) / 10.0f;
+    glm::vec3 tang_vel =
+        glm::vec3(glm::normalize(glm::cross(glm::vec3(0, 1, 0),
+                                            glm::vec3(_pos) - g_center))
+                  );
+    float dis = glm::distance(glm::vec3(_pos), g_center);
+    glm::vec3 rnd_vel = tang_vel * (dis)*25.f;
+    rnd_vel /= 100;
+
+    rnd_vel += g_velocity;  // galaxy 1 center
+
+ particles.push_back({{ _pos.x, _pos.y, _pos.z, _pos.w }});
+	particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z},
+        							  {{0, 0, 0}}});
+
+
+        
   }
   return std::make_pair(particles, particle_data);
 }
@@ -264,7 +280,7 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
                               sizeof(ParticleData) * allocated_particle_count);
 
     particlepos = cl::Buffer(context, CL_MEM_READ_WRITE,
-                             sizeof(cl_float3) * allocated_particle_count);
+                             sizeof(cl_float4) * allocated_particle_count);
     openGLparticlepos = cl::BufferGL(context, CL_MEM_WRITE_ONLY, VBOIndex);
 
     // Intermediate buffers
@@ -312,14 +328,17 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
 
     buildOctree = cl::Kernel(program, "BuildOctree");
     buildOctree.setArg(0, particlepos);
-    buildOctree.setArg(1, particledata);
-    buildOctree.setArg(2, Nodes);
-    buildOctree.setArg(3, globalMinBuffer);
-    buildOctree.setArg(4, globalMaxBuffer);
-    buildOctree.setArg(5, static_cast<const int>(particle_count));
-    buildOctree.setArg(6, static_cast<const int>(START_DEPTH));
-    buildOctree.setArg(7, itrBuffer);
-    buildOctree.setArg(8, octree_items_per_thread);
+    buildOctree.setArg(1, Nodes);
+    buildOctree.setArg(2, globalMinBuffer);
+    buildOctree.setArg(3, globalMaxBuffer);
+    buildOctree.setArg(4, static_cast<const int>(particle_count));
+    buildOctree.setArg(5, static_cast<const int>(START_DEPTH));
+    buildOctree.setArg(6, itrBuffer);
+    buildOctree.setArg(7, octree_items_per_thread);
+
+    DivideByMass = cl::Kernel(program, "DivideCentersByMass");
+    DivideByMass.setArg(0, Nodes);
+    DivideByMass.setArg(1, itrBuffer);
 
     centerofMass = cl::Kernel(program, "CalculateCenterOfMass");
     centerofMass.setArg(0, Nodes);
@@ -385,8 +404,6 @@ void NBody::doTesting() {
                                   sizeof(cl_float3), &min);
   command_queue.enqueueReadBuffer(globalMaxBuffer, CL_FALSE, 0,
                                   sizeof(cl_float3), &max);
-  command_queue.enqueueReadBuffer(tempBuffer, CL_FALSE, 0, sizeof(cl_int),
-                                  &temp);
   command_queue.enqueueReadBuffer(itrBuffer, CL_FALSE, 0, sizeof(cl_int), &itr);
   command_queue.finish();
   File << pos.size() << std::endl;
@@ -408,7 +425,7 @@ void NBody::doTesting() {
 
   for (int i = 0; i < pos.size(); i++) {
     if (pos[i].x != GPUpos[i].x || pos[i].y != GPUpos[i].y ||
-        pos[i].z != GPUpos[i].z)
+        pos[i].z != GPUpos[i].z || pos[i].w != GPUpos[i].w)
       File << "Particle: " << i << " real " << pos[i] << " GPU " << GPUpos[i]
            << std::endl;
 
@@ -417,7 +434,6 @@ void NBody::doTesting() {
            << GPUdata[i] << std::endl;
   }
 
-  File << temp << std::endl;
   for (int i = 0; i < add8powers(3); i++) {
     File << "index " << i << std::endl << nodes[i] << std::endl;
   }
@@ -445,9 +461,11 @@ void NBody::Calculate(NBodyTimer& timer) {
   std::vector<cl::Event> ev2(1);
   std::vector<cl::Event> ev3(1);
   std::vector<cl::Event> ev4(1);
+  std::vector<cl::Event> ev42(1);
   std::vector<cl::Event> ev5(1);
   std::vector<cl::Event> ev6(1);
   std::vector<cl::Event> ev7(1);
+  std::vector<cl::Event> evread(1);
   try {
 #ifdef DEBUG
     std::cout << "Starting calculation" << std::endl;
@@ -473,6 +491,9 @@ void NBody::Calculate(NBodyTimer& timer) {
         cl::NDRange(global_work_size_from_item_per_thread(
             (1uLL << (3uLL * START_DEPTH)), octree_items_per_thread)),
         cl::NullRange, &ev3, &ev4[0]);
+    int usedNodes;
+    command_queue.enqueueReadBuffer(itrBuffer, CL_FALSE, 0, sizeof(cl_int),
+                                    &usedNodes, &ev4, &evread[0]);
 
     // command_queue.enqueueNDRangeKernel(
     //     centerofMass, cl::NullRange,
@@ -483,6 +504,9 @@ void NBody::Calculate(NBodyTimer& timer) {
 
     command_queue.enqueueNDRangeKernel(centerofMass, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1), &ev4,
+                                       &ev42[0]);
+    command_queue.enqueueNDRangeKernel(DivideByMass, cl::NullRange,
+                                       cl::NDRange(divide_by_mass_threads), cl::NullRange, &ev42,
                                        &ev5[0]);
     command_queue.enqueueNDRangeKernel(
         barneshut, cl::NullRange,
@@ -519,6 +543,14 @@ void NBody::Calculate(NBodyTimer& timer) {
     m_done_mutex.lock();
     m_newdata = true;
     m_done_mutex.unlock();
+
+
+    cl::WaitForEvents(evread);
+    std::cout << "Used nodes: " << usedNodes << " Allocated: "<<allocatedNodes<< std::endl;
+    if (usedNodes > allocatedNodes) {
+      std::cout << "Used more nodes than allocated, exiting" << std::endl;
+      std::exit(1);
+    }
   } catch (cl::Error error) {
     std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
               << std::endl;

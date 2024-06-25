@@ -1,21 +1,23 @@
 typedef struct {
   float3 velocity;
   float3 force;
-  float mass;
 } ParticleData;
 
 typedef struct {
-  float3 center_of_mass;
+  float4 center_of_mass;
   float3 region_size;
+  int isLeaf;  // 0 = isLeaf, 1 = Parent, 2 = Empty
   int children[8];
-  float mass;
-  int isLeaf;
+  // Size is 68 bytes :c
+  int padding[3];
+  // This way size is 80, which matches the alignment of the largest member
+  // float3(float4) of 16 bytes.
 } Node;
 
 #define isLeaf_LEAF 2
 #define isLeaf_PARENT 1
 #define isLeaf_EMPTY 0
-__kernel void BarnesHut(__global const float3* particles_pos,
+__kernel void BarnesHut(__global const float4* particles_pos,
                         __global ParticleData* particles_data,
                         __global const Node* nodes, const int particle_count,
                         const float distanceThreshold, const float eps,
@@ -25,25 +27,27 @@ __kernel void BarnesHut(__global const float3* particles_pos,
   const int start = global_id * items_per_work_group;
 
   const int end = min(start + items_per_work_group, particle_count);
-  int stack[512];
+  int stack[1024];
   int stackSize = 0;
   for (int id = start; id < end; id++) {
-    float3 particle_pos = particles_pos[id];
+    float4 particle_pos = particles_pos[id];
     ParticleData* particle_data = &particles_data[id];
     float3 force = (float3)(0, 0, 0);
 
     for (int i = 0; i < 8; i++) {
       for (int j = 0; j < 8; j++) {
-        stack[stackSize++] = nodes[nodes[0].children[i]].children[j];
+        int a = nodes[0].children[i];
+        int b = nodes[a].children[j];
+        stack[stackSize++] = b;
       }
     }
 
     while (stackSize > 0) {
       const Node* node = &nodes[stack[--stackSize]];
 
-      if (node->mass == 0) continue;
+      if (node->center_of_mass.w == 0) continue;
 
-      const float3 delta = node->center_of_mass - particle_pos;
+      const float3 delta = node->center_of_mass.xyz - particle_pos.xyz;
       const float distance_squared =
           delta.x * delta.x + delta.y * delta.y + delta.z * delta.z + eps * eps;
 
@@ -53,10 +57,12 @@ __kernel void BarnesHut(__global const float3* particles_pos,
 
       if (node->isLeaf == isLeaf_LEAF ||
           d_squared < distanceThreshold * distanceThreshold) {
-        float F = (G * particle_data->mass * node->mass) / distance_squared;
+        float F =
+            (G * particle_pos.w * node->center_of_mass.w) / distance_squared;
         float3 add = delta * F / sqrt(distance_squared);
         force += add;
-      } else {
+      } else if(node->isLeaf == isLeaf_PARENT){
+          
         for (int j = 0; j < 8; ++j) {
           stack[stackSize++] = node->children[j];
         }
@@ -66,7 +72,7 @@ __kernel void BarnesHut(__global const float3* particles_pos,
   }
 }
 
-__kernel void AddForces(__global float3* particles_pos,
+__kernel void AddForces(__global float4* particles_pos,
                         __global ParticleData* particles_data,
                         const int data_size, const int items_per_work_item,
                         const float dt) {
@@ -76,15 +82,15 @@ __kernel void AddForces(__global float3* particles_pos,
   int end = min(start + items_per_work_item, data_size);
 
   for (int id = start; id < end; id++) {
-    float3* particle = &particles_pos[id];
+    float4* particle = &particles_pos[id];
     ParticleData* particle_data = &particles_data[id];
 
-    particle_data->velocity += particle_data->force * dt / particle_data->mass;
-    *particle += particle_data->velocity * dt;
+    particle_data->velocity += particle_data->force * dt / particle->w;
+    *particle += (float4)(particle_data->velocity * dt, 0);
   }
 }
 
-__kernel void BoundingBoxStage1(__global const float3* particles,
+__kernel void BoundingBoxStage1(__global const float4* particles,
                                 __global float3* min_values,
                                 __global float3* max_values,
                                 const int particle_count,
@@ -105,9 +111,9 @@ __kernel void BoundingBoxStage1(__global const float3* particles,
   int end = min(start + items_per_work_item, particle_count);
 
   for (int i = start; i < end; i++) {
-    float3 particle = particles[i];
-    min_pos = fmin(min_pos, particle);
-    max_pos = fmax(max_pos, particle);
+    float4 particle = particles[i];
+    min_pos = fmin(min_pos, particle.xyz);
+    max_pos = fmax(max_pos, particle.xyz);
   }
 
   local_min[local_id] = min_pos;
@@ -256,24 +262,20 @@ __kernel void InitOctree(__global Node* nodes, const int start_depth,
       nodes[nodes[i].children[j]].region_size = nodes[i].region_size * 0.5f;
     }
     nodes[i].isLeaf = isLeaf_PARENT;
-    nodes[i].mass = 0.0f;
-    nodes[i].center_of_mass = (float3)(0, 0, 0);
+    nodes[i].center_of_mass = (float4)(0, 0, 0, 0);
   }
   for (size_t i = c; i < *itr; ++i) {
     nodes[i].isLeaf = isLeaf_EMPTY;
-    nodes[i].mass = 0.0f;
-    nodes[i].center_of_mass = (float3)(0, 0, 0);
+    nodes[i].center_of_mass = (float4)(0, 0, 0, 0);
   }
 }
 // Kernel for initializing the octree
-__kernel void BuildOctree(__global const float3* particles_pos,
-                          __global const ParticleData* particles_data,
+__kernel void BuildOctree(__global const float4* particles_pos,
                           __global Node* nodes,
                           __global const float3* boundingbox_min,
                           __global const float3* boundingbox_max,
                           const int particle_count, const int start_depth,
-                          __global int* itr, const int items_per_work_item
-                          ) {
+                          __global int* itr, const int items_per_work_item) {
   int global_id = get_global_id(0);
 
   int start_box_index = global_id * items_per_work_item;
@@ -314,88 +316,205 @@ __kernel void BuildOctree(__global const float3* particles_pos,
                  k * start_depth_size.z) +
         start_depth_size * 0.5f;
 
-    for (size_t particleind = 0; particleind < particle_count; particleind++) {
-      Node* current = currentstarter;
-      bool done = false;
+    const int STACKSIZE = 8;
+
+    int stack[STACKSIZE];
+    int stackSize = 0;
+
+    for (int p = 0; p < particle_count / STACKSIZE; p++) {
+      stackSize = 0;
       float3 current_block_center = start_depth_center;
-      const float3 particle_pos = particles_pos[particleind];
-      const ParticleData* const particle_data = &particles_data[particleind];
       float3 current_block_size = start_depth_size / 2.0f;
+      for (size_t p2 = p * STACKSIZE;
+           p2 < min(particle_count, (p + 1) * STACKSIZE); p2++) {
+        if (isinside(current_block_center - current_block_size,
+                     current_block_center + current_block_size,
+                     particles_pos[p2].xyz)) {
+          stack[stackSize++] = p2;
+        }
+      }
 
-      if (!isinside(current_block_center - current_block_size,
-                    current_block_center + current_block_size, particle_pos)) {
-        done = true;
-      } 
-      while (!done) {
-        // Locate the particle in the box
-        float3 octant =
-            (float3)(particle_pos.x > current_block_center.x ? 1.0f : -1.0f,
-                     particle_pos.y > current_block_center.y ? 1.0f : -1.0f,
-                     particle_pos.z > current_block_center.z ? 1.0f : -1.0f);
+      for (size_t p3 = 0; p3 < stackSize; p3++) {
+        Node* current = currentstarter;
+        bool done = false;
+        current_block_center = start_depth_center;
+        const float4 particle_pos = particles_pos[stack[p3]];
+        current_block_size = start_depth_size / 2.0f;
+        for (int depth = 6; depth > 0; depth--) {
+          // Locate the particle in the box
+          float3 octant =
+              (float3)(particle_pos.x > current_block_center.x ? 1.0f : -1.0f,
+                       particle_pos.y > current_block_center.y ? 1.0f : -1.0f,
+                       particle_pos.z > current_block_center.z ? 1.0f : -1.0f);
 
-        // Get the index
-        int index = (particle_pos.x > current_block_center.x ? 1 : 0) +
-                    (particle_pos.y > current_block_center.y ? 2 : 0) +
-                    (particle_pos.z > current_block_center.z ? 4 : 0);
+          // Get the index
+          int index = (particle_pos.x > current_block_center.x ? 1 : 0) +
+                      (particle_pos.y > current_block_center.y ? 2 : 0) +
+                      (particle_pos.z > current_block_center.z ? 4 : 0);
 
-        if (current->isLeaf == isLeaf_LEAF) {
-          current->isLeaf = isLeaf_PARENT;
-          // Its only that one particle, its center of mass is that particle
-          float3 prev_particle_pos = current->center_of_mass / current->mass;
-          int prev_index =
-              (prev_particle_pos.x > current_block_center.x ? 1 : 0) +
-              (prev_particle_pos.y > current_block_center.y ? 2 : 0) +
-              (prev_particle_pos.z > current_block_center.z ? 4 : 0);
+          if (current->isLeaf == isLeaf_LEAF) {
+            current->isLeaf = isLeaf_PARENT;
+            // Its only that one particle, its center of mass is that particle
+            float3 prev_particle_pos =
+                current->center_of_mass.xyz / current->center_of_mass.w;
+            int prev_index =
+                (prev_particle_pos.x > current_block_center.x ? 1 : 0) +
+                (prev_particle_pos.y > current_block_center.y ? 2 : 0) +
+                (prev_particle_pos.z > current_block_center.z ? 4 : 0);
 
-          size_t previtr = atomic_add(itr, 8);
+            size_t previtr = atomic_add(itr, 8);
 
-          for (int m = 0; m < 8; m++) {
-            current->children[m] = previtr + m;
-            Node* n = &nodes[previtr + m];
-            // current->children[m]->children[0] = 0;
-            n->region_size = current->region_size / 2.0f;
-            n->isLeaf = isLeaf_EMPTY;
-            n->mass = 0.0f;
-            n->center_of_mass = (float3)(0, 0, 0);
+            for (int m = 0; m < 8; m++) {
+              current->children[m] = previtr + m;
+              Node* n = &nodes[previtr + m];
+              // current->children[m]->children[0] = 0;
+              n->region_size = current->region_size / 2.0f;
+              n->isLeaf = isLeaf_EMPTY;
+              n->center_of_mass = (float4)(0, 0, 0, 0);
+            }
+
+            Node* new_node_for_prev = &nodes[current->children[prev_index]];
+            new_node_for_prev->isLeaf = isLeaf_LEAF;
+            new_node_for_prev->center_of_mass = current->center_of_mass;
+
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            // Move onto next node
+            current_block_size = current_block_size * 0.5f;
+            current_block_center =
+                current_block_center + current_block_size * octant;
+            current = &nodes[current->children[index]];
+          } else if (current->isLeaf == isLeaf_EMPTY) {
+
+            size_t previtr = atomic_add(itr, 8);
+
+            for (int m = 0; m < 8; m++) {
+              current->children[m] = previtr + m;
+              Node* n = &nodes[previtr + m];
+              // current->children[m]->children[0] = 0;
+              n->region_size = current->region_size / 2.0f;
+              n->isLeaf = isLeaf_EMPTY;
+              n->center_of_mass = (float4)(0, 0, 0, 0);
+            }
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            // Move onto next node
+            current_block_size = current_block_size * 0.5f;
+            current_block_center =
+                current_block_center + current_block_size * octant;
+            current = &nodes[current->children[index]];
+          } else {
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            // Move onto next node
+            current_block_size = current_block_size * 0.5f;
+            current_block_center =
+                current_block_center + current_block_size * octant;
+            current = &nodes[current->children[index]];
+            current->isLeaf = isLeaf_PARENT;
           }
+        }
+        while (!done) {
+          // Locate the particle in the box
+          float3 octant =
+              (float3)(particle_pos.x > current_block_center.x ? 1.0f : -1.0f,
+                       particle_pos.y > current_block_center.y ? 1.0f : -1.0f,
+                       particle_pos.z > current_block_center.z ? 1.0f : -1.0f);
 
-          Node* new_node_for_prev = &nodes[current->children[prev_index]];
-          new_node_for_prev->isLeaf = isLeaf_LEAF;
-          new_node_for_prev->center_of_mass = current->center_of_mass;
-          new_node_for_prev->mass = current->mass;
+          // Get the index
+          int index = (particle_pos.x > current_block_center.x ? 1 : 0) +
+                      (particle_pos.y > current_block_center.y ? 2 : 0) +
+                      (particle_pos.z > current_block_center.z ? 4 : 0);
 
-          //  Adjust data for node
-          current->mass += particle_data->mass;
-          current->center_of_mass += particle_pos * particle_data->mass;
+          if (current->isLeaf == isLeaf_LEAF) {
+            current->isLeaf = isLeaf_PARENT;
+            // Its only that one particle, its center of mass is that particle
+            float3 prev_particle_pos =
+                current->center_of_mass.xyz / current->center_of_mass.w;
+            int prev_index =
+                (prev_particle_pos.x > current_block_center.x ? 1 : 0) +
+                (prev_particle_pos.y > current_block_center.y ? 2 : 0) +
+                (prev_particle_pos.z > current_block_center.z ? 4 : 0);
 
-          // Move onto next node
-          current_block_size = current_block_size * 0.5f;
-          current_block_center =
-              current_block_center + current_block_size * octant;
-          current = &nodes[current->children[index]];
-        } else if (current->isLeaf == isLeaf_EMPTY) {
-          done = true;
+            size_t previtr = atomic_add(itr, 8);
 
-          //  Adjust data for node
-          current->mass = particle_data->mass;
-          current->center_of_mass = particle_pos * particle_data->mass;
+            for (int m = 0; m < 8; m++) {
+              current->children[m] = previtr + m;
+              Node* n = &nodes[previtr + m];
+              // current->children[m]->children[0] = 0;
+              n->region_size = current->region_size / 2.0f;
+              n->isLeaf = isLeaf_EMPTY;
+              n->center_of_mass = (float4)(0, 0, 0, 0);
+            }
 
-          current->isLeaf = isLeaf_LEAF;
-        } else {
-          //  Adjust data for node
-          current->mass += particle_data->mass;
-          current->center_of_mass += particle_pos * particle_data->mass;
+            Node* new_node_for_prev = &nodes[current->children[prev_index]];
+            new_node_for_prev->isLeaf = isLeaf_LEAF;
+            new_node_for_prev->center_of_mass = current->center_of_mass;
 
-          // Move onto next node
-          current_block_size = current_block_size * 0.5f;
-          current_block_center =
-              current_block_center + current_block_size * octant;
-          current = &nodes[current->children[index]];
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            // Move onto next node
+            current_block_size = current_block_size * 0.5f;
+            current_block_center =
+                current_block_center + current_block_size * octant;
+            current = &nodes[current->children[index]];
+          } else if (current->isLeaf == isLeaf_EMPTY) {
+            done = true;
+
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            current->isLeaf = isLeaf_LEAF;
+          } else {
+            //  Adjust data for node
+            current->center_of_mass +=
+                (float4)(particle_pos.xyz * particle_pos.w, particle_pos.w);
+
+            // Move onto next node
+            current_block_size = current_block_size * 0.5f;
+            current_block_center =
+                current_block_center + current_block_size * octant;
+            current = &nodes[current->children[index]];
+          }
         }
       }
     }
   }
 }
+
+//__kernel void CalculateCenterOfMass(__global Node* nodes, const int start_depth,
+//                                    __global int* itr) {
+//  size_t global_id = get_global_id(0);
+//
+//  int start_ind = add8powers(start_depth - 1);
+//  for (size_t i = start_ind - 1; i != 0; --i) {
+//    Node* n = &nodes[i];
+//    for (size_t j = 0; j < 8; ++j) {
+//      n->center_of_mass += nodes[n->children[j]].center_of_mass;
+//    }
+//  }
+//
+//  Node* n = &nodes[0];
+//  for (size_t j = 0; j < 8; ++j) {
+//    n->center_of_mass += nodes[n->children[j]].center_of_mass;
+//  }
+//
+//  for (size_t i = 0; i < *itr; ++i) {
+//    nodes[i].center_of_mass =
+//        (float4)(nodes[i].center_of_mass.xyz / nodes[i].center_of_mass.w,
+//                 nodes[i].center_of_mass.w);
+//  }
+//}
+//
 
 __kernel void CalculateCenterOfMass(__global Node* nodes, const int start_depth,
                                     __global int* itr) {
@@ -405,18 +524,35 @@ __kernel void CalculateCenterOfMass(__global Node* nodes, const int start_depth,
   for (size_t i = start_ind - 1; i != 0; --i) {
     Node* n = &nodes[i];
     for (size_t j = 0; j < 8; ++j) {
-      n->mass += nodes[n->children[j]].mass;
       n->center_of_mass += nodes[n->children[j]].center_of_mass;
     }
   }
 
   Node* n = &nodes[0];
   for (size_t j = 0; j < 8; ++j) {
-    n->mass += nodes[n->children[j]].mass;
     n->center_of_mass += nodes[n->children[j]].center_of_mass;
   }
 
-  for (size_t i = 0; i < *itr; ++i) {
-    nodes[i].center_of_mass /= nodes[i].mass;
+  //for (size_t i = 0; i < *itr; ++i) {
+  //  nodes[i].center_of_mass =
+  //      (float4)(nodes[i].center_of_mass.xyz / nodes[i].center_of_mass.w,
+  //               nodes[i].center_of_mass.w);
+  //}
+}
+__kernel void DivideCentersByMass(__global Node* nodes, __global int* itr
+                                    ) {
+  const int global_id = get_global_id(0);
+  const int global_size = get_global_size(0);
+  const int item_per_thread =1+ *itr / global_size;
+  const int start_ind = global_id * item_per_thread;
+  const int end_ind = min(start_ind + item_per_thread, *itr);
+
+  for (int i = start_ind; i < end_ind; i++) {
+    nodes[i].center_of_mass =
+        (float4)(nodes[i].center_of_mass.xyz / nodes[i].center_of_mass.w,
+                 nodes[i].center_of_mass.w);
   }
 }
+
+
+
