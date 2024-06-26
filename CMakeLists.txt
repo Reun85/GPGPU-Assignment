@@ -27,7 +27,8 @@ project(${PROJECT_NAME} VERSION 0.1.0)
 set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(DESTINATION_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
-file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp" "${SOURCE_DIR}/*.h" "${SOURCE_DIR}/*.c" "${SOURCE_DIR}/*.hpp")
+# file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp" "${SOURCE_DIR}/*.h" "${SOURCE_DIR}/*.c" "${SOURCE_DIR}/*.hpp")
+file(GLOB_RECURSE SOURCE_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.cpp" "${SOURCE_DIR}/*.h" "${SOURCE_DIR}/*.hpp")
 file(GLOB_RECURSE GLSL_FILES CONFIGURE_DEPENDS "${SOURCE_DIR}/*.glsl" "${SOURCE_DIR}/*.vert" "${SOURCE_DIR}/*.frag")
 file(GLOB_RECURSE ASSETS CONFIGURE_DEPENDS "${SOURCE_DIR}/Assets/**")
 
@@ -77,7 +78,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE $<IF:$<TARGET_EXISTS:SDL2_image::S
 find_package(OpenCL REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE OpenCL::OpenCL)
 
-include_directories(vendor)
+include_directories("${CMAKE_SOURCE_DIR}/src/vendor")
 # add_subdirectory(vendor/OpenCL)
 # #
 # target_link_libraries(${PROJECT_NAME} PRIVATE OpenCLLib "-std=c++11")

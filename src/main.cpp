@@ -17,18 +17,22 @@
 
 // standard
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <thread>
 
+#include "Layout.h"
 #include "MyApp.h"
 #include "NBody.h"
-void SecondThreadFunction(NBody& body, bool* quit) {
+void SecondThreadFunction(NBody& body, std::mutex& m) {
   NBodyTimer timer;
   const bool only_once = false;
   do {
     body.Calculate(timer);
-  } while (!(*quit) && !only_once);
+    // if it can lock, that means we let go in main
+  } while (!(m.try_lock()) && !only_once);
 
+  m.unlock();
   std::cout << "Other thread stopping" << std::endl;
 }
 
@@ -168,145 +172,155 @@ int main(int argc, char* args[]) {
   ImGui_ImplSDL2_InitForOpenGL(win, context);
   ImGui_ImplOpenGL3_Init();
   // Create NBody Simulation
-
-  NBody nbody;
-
-  //
-  // 4. lépés: indítsuk el a fő üzenetfeldolgozó ciklust
-  //
   {
-    // véget kell-e érjen a program futása?
-    bool quit = false;
-    // feldolgozandó üzenet ide kerül
-    SDL_Event ev;
+    NBody nbody;
+    // When this mutex is unlocked, then the nbody sim stops.
+    std::mutex nbodystop;
+    nbodystop.lock();
 
-    // alkalmazás példánya
-    CMyApp app(PARTICLE_COUNT);
-    if (!app.Init()) {
-      SDL_GL_DeleteContext(context);
-      SDL_DestroyWindow(win);
-      SDL_LogError(
-          SDL_LOG_CATEGORY_ERROR,
-          "[app.Init] Error during the initialization of the application!");
-      return 1;
-    }
+    std::thread t;
+    //
+    // 4. lépés: indítsuk el a fő üzenetfeldolgozó ciklust
+    //
+    {
+      // véget kell-e érjen a program futása?
+      bool quit = false;
+      // feldolgozandó üzenet ide kerül
+      SDL_Event ev;
 
-    if (!nbody.Init(app.GetVBOAddress(), PARTICLE_COUNT)) {
-      SDL_LogError(
-          SDL_LOG_CATEGORY_ERROR,
-          "[nbody.Init] Error during the initialization of the application!");
-      return 1;
-    }
-    nbody.Start();
+      // alkalmazás példánya
+      CMyApp app(PARTICLE_COUNT);
+      if (!app.Init()) {
+        SDL_GL_DeleteContext(context);
+        SDL_DestroyWindow(win);
+        SDL_LogError(
+            SDL_LOG_CATEGORY_ERROR,
+            "[app.Init] Error during the initialization of the application!");
+        return 1;
+      }
 
-    std::thread t(SecondThreadFunction, std::ref(nbody), &quit);
+      if (!nbody.Init(app.GetVBOAddress(), PARTICLE_COUNT)) {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_ERROR,
+            "[nbody.Init] Error during the initialization of the application!");
+        return 1;
+      }
+      Galaxy gal;
+      nbody.Start(gal.GetResult());
 
-    while (!quit) {
-      // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
-      while (SDL_PollEvent(&ev)) {
-        ImGui_ImplSDL2_ProcessEvent(&ev);
-        bool is_mouse_captured =
-            ImGui::GetIO().WantCaptureMouse;  // kell-e az imgui-nak az egér
-        bool is_keyboard_captured =
-            ImGui::GetIO()
-                .WantCaptureKeyboard;  // kell-e az imgui-nak a billentyűzet
+      t = std::thread(SecondThreadFunction, std::ref(nbody),
+                      std::ref(nbodystop));
 
-        switch (ev.type) {
-          case SDL_QUIT:
-            quit = true;
-            break;
-          case SDL_KEYDOWN:
-            if (ev.key.keysym.sym == SDLK_ESCAPE) quit = true;
+      while (!quit) {
+        // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
+        while (SDL_PollEvent(&ev)) {
+          ImGui_ImplSDL2_ProcessEvent(&ev);
+          bool is_mouse_captured =
+              ImGui::GetIO().WantCaptureMouse;  // kell-e az imgui-nak az egér
+          bool is_keyboard_captured =
+              ImGui::GetIO()
+                  .WantCaptureKeyboard;  // kell-e az imgui-nak a billentyűzet
 
-            // ALT + ENTER vált teljes képernyőre, és vissza.
-            if ((ev.key.keysym.sym == SDLK_RETURN)  // Enter le lett nyomva, ...
-                && (ev.key.keysym.mod & KMOD_ALT)   // az ALTal együtt, ...
-                && !(ev.key.keysym.mod &
-                     (KMOD_SHIFT | KMOD_CTRL |
-                      KMOD_GUI)))  // de más modifier gomb nem lett lenyomva.
-            {
-              Uint32 FullScreenSwitchFlag =
-                  (SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN_DESKTOP)
-                      ? 0
-                      : SDL_WINDOW_FULLSCREEN_DESKTOP;
-              SDL_SetWindowFullscreen(win, FullScreenSwitchFlag);
-            }
-            if (!is_keyboard_captured) app.KeyboardDown(ev.key);
-            break;
-          case SDL_KEYUP:
-            if (!is_keyboard_captured) app.KeyboardUp(ev.key);
-            break;
-          case SDL_MOUSEBUTTONDOWN:
-            if (!is_mouse_captured) app.MouseDown(ev.button);
-            break;
-          case SDL_MOUSEBUTTONUP:
-            if (!is_mouse_captured) app.MouseUp(ev.button);
-            break;
-          case SDL_MOUSEWHEEL:
-            if (!is_mouse_captured) app.MouseWheel(ev.wheel);
-            break;
-          case SDL_MOUSEMOTION:
-            if (!is_mouse_captured) app.MouseMove(ev.motion);
-            break;
-          case SDL_WINDOWEVENT:
-            // Néhány platformon (pl. Windows) a SIZE_CHANGED nem hívódik meg az
-            // első megjelenéskor. Szerintünk ez bug az SDL könytárban. Ezért
-            // ezt az esetet külön lekezeljük, mivel a MyApp esetlegesen
-            // tartalmazhat ablak méret függő beállításokat, pl. a kamera aspect
-            // ratioját a perspective() hívásnál.
-            if ((ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) ||
-                (ev.window.event == SDL_WINDOWEVENT_SHOWN)) {
-              int w, h;
-              SDL_GetWindowSize(win, &w, &h);
-              app.Resize(w, h);
-            }
-            break;
+          switch (ev.type) {
+            case SDL_QUIT:
+              quit = true;
+              break;
+            case SDL_KEYDOWN:
+              if (ev.key.keysym.sym == SDLK_ESCAPE) quit = true;
+
+              // ALT + ENTER vált teljes képernyőre, és vissza.
+              if ((ev.key.keysym.sym ==
+                   SDLK_RETURN)  // Enter le lett nyomva, ...
+                  && (ev.key.keysym.mod & KMOD_ALT)  // az ALTal együtt, ...
+                  && !(ev.key.keysym.mod &
+                       (KMOD_SHIFT | KMOD_CTRL |
+                        KMOD_GUI)))  // de más modifier gomb nem lett lenyomva.
+              {
+                Uint32 FullScreenSwitchFlag =
+                    (SDL_GetWindowFlags(win) & SDL_WINDOW_FULLSCREEN_DESKTOP)
+                        ? 0
+                        : SDL_WINDOW_FULLSCREEN_DESKTOP;
+                SDL_SetWindowFullscreen(win, FullScreenSwitchFlag);
+              }
+              if (!is_keyboard_captured) app.KeyboardDown(ev.key);
+              break;
+            case SDL_KEYUP:
+              if (!is_keyboard_captured) app.KeyboardUp(ev.key);
+              break;
+            case SDL_MOUSEBUTTONDOWN:
+              if (!is_mouse_captured) app.MouseDown(ev.button);
+              break;
+            case SDL_MOUSEBUTTONUP:
+              if (!is_mouse_captured) app.MouseUp(ev.button);
+              break;
+            case SDL_MOUSEWHEEL:
+              if (!is_mouse_captured) app.MouseWheel(ev.wheel);
+              break;
+            case SDL_MOUSEMOTION:
+              if (!is_mouse_captured) app.MouseMove(ev.motion);
+              break;
+            case SDL_WINDOWEVENT:
+              // Néhány platformon (pl. Windows) a SIZE_CHANGED nem hívódik meg
+              // az első megjelenéskor. Szerintünk ez bug az SDL könytárban.
+              // Ezért ezt az esetet külön lekezeljük, mivel a MyApp esetlegesen
+              // tartalmazhat ablak méret függő beállításokat, pl. a kamera
+              // aspect ratioját a perspective() hívásnál.
+              if ((ev.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) ||
+                  (ev.window.event == SDL_WINDOWEVENT_SHOWN)) {
+                int w, h;
+                SDL_GetWindowSize(win, &w, &h);
+                app.Resize(w, h);
+              }
+              break;
+          }
         }
+
+        // Számoljuk ki az update-hez szükséges idő mennyiségeket!
+        static Uint32 LastTick =
+            SDL_GetTicks();  // statikusan tároljuk, mi volt az előző "tick".
+        Uint32 CurrentTick = SDL_GetTicks();  // Mi az aktuális.
+        SUpdateInfo updateInfo                // Váltsuk át másodpercekre!
+            {static_cast<float>(CurrentTick) / 1000.0f,
+             static_cast<float>(CurrentTick - LastTick) / 1000.0f};
+        LastTick = CurrentTick;  // Mentsük el utolsóként az aktuális "tick"-et!
+
+        bool updateddata = nbody.TryAndWriteData();
+        if (updateddata) {
+          app.UpdatedParticles();
+        }
+        app.Update(updateInfo);
+        app.Render();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame();  // Ezután lehet imgui parancsokat hívni,
+                                    // egészen az ImGui::Render()-ig
+
+        ImGui::NewFrame();
+        app.RenderGUI();
+        ImGui::Render();
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        SDL_GL_SwapWindow(win);
       }
 
-      // Számoljuk ki az update-hez szükséges idő mennyiségeket!
-      static Uint32 LastTick =
-          SDL_GetTicks();  // statikusan tároljuk, mi volt az előző "tick".
-      Uint32 CurrentTick = SDL_GetTicks();  // Mi az aktuális.
-      SUpdateInfo updateInfo                // Váltsuk át másodpercekre!
-          {static_cast<float>(CurrentTick) / 1000.0f,
-           static_cast<float>(CurrentTick - LastTick) / 1000.0f};
-      LastTick = CurrentTick;  // Mentsük el utolsóként az aktuális "tick"-et!
+      // takarítson el maga után az objektumunk
+      app.Clean();
+    }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU
+       // erőforrásokat befoglaló osztályok destruktorai is itt futnak le
 
-      bool updateddata = nbody.TryAndWriteData();
-      if (updateddata) {
-        app.UpdatedParticles();
-      }
-      app.Update(updateInfo);
-      app.Render();
+    //
+    // 5. lépés: lépjünk ki
+    //
 
-      ImGui_ImplOpenGL3_NewFrame();
-      ImGui_ImplSDL2_NewFrame();  // Ezután lehet imgui parancsokat hívni,
-                                  // egészen az ImGui::Render()-ig
+    // ImGui de-init
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
 
-      ImGui::NewFrame();
-      app.RenderGUI();
-      ImGui::Render();
-
-      ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-      SDL_GL_SwapWindow(win);
-    }
-
-    // takarítson el maga után az objektumunk
-    app.Clean();
     t.join();
     nbody.Clean();
-  }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU
-     // erőforrásokat befoglaló osztályok destruktorai is itt futnak le
-
-  //
-  // 5. lépés: lépjünk ki
-  //
-
-  // ImGui de-init
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplSDL2_Shutdown();
-  ImGui::DestroyContext();
+    // OpenCL has ties to the SDL context.
+  }
 
   SDL_GL_DeleteContext(context);
   SDL_DestroyWindow(win);

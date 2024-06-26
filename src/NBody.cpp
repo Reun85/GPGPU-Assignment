@@ -1,8 +1,14 @@
 #include "NBody.h"
 // #define DEBUG
 
+#include <CL/cl_gl.h>
+#include <GL/glew.h>
 #include <SDL2/SDL.h>
+#if defined(_WIN32)
 #include <windows.h>
+#elif defined(__linux__)
+#include <GL/glx.h>
+#endif
 
 #include <CL/opencl.hpp>
 #include <iostream>
@@ -76,7 +82,6 @@ std::ostream& operator<<(std::ostream& os, const Node& n) {
 #include <oclutils.hpp>
 #include <random>
 #include <vector>
-
 
 using namespace cl;
 NBody::NBody() {}
@@ -165,8 +170,8 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
     }
 
     // Generate Buffers
-    Nodes =
-        cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(Node) * allocatedNodes);
+    Nodes = cl::Buffer(context, CL_MEM_READ_WRITE,
+                       sizeof(Node) * allocatedNodes / 100);
     particledata = cl::Buffer(context, CL_MEM_READ_WRITE,
                               sizeof(ParticleData) * particle_count);
 
@@ -416,7 +421,7 @@ void NBody::Calculate(NBodyTimer& timer) {
     m_writing_mutex.lock();
     float dt = timer.Tick();
     std::cout << "UPS: " << 1.f / dt << std::endl;
-    dt = min(dt, 0.2f);
+    dt = std::min(dt, 0.2f);
 
     positionupdate.setArg(4, dt);
     command_queue.enqueueNDRangeKernel(
@@ -463,13 +468,10 @@ void NBody::Clean() {}
 
 void NBody::Start(
 
-    std::function<ParticleSetDescription(const size_t, const float)>
-        generating_func) {
-  ParticleSetDescription set = generating_func(particle_count, default_mass);
+    std::function<ParticleSetDescription(const size_t)> generating_func) {
+  ParticleSetDescription set = generating_func(particle_count);
   std::vector<cl_float3> pos = set.first;
   std::vector<ParticleData> data = set.second;
-  pos.resize(allocated_particle_count);
-  data.resize(allocated_particle_count);
   test_positions = set.first;
   test_data = set.second;
 

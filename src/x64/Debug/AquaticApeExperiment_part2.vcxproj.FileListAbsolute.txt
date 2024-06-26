@@ -1,9 +1,0 @@
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\AquaticApeExperiment_part2.vcxproj.CopyComplete
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\NBody sim.exe
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\glew32d.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\OpenCL.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\SDL2d.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\SDL2_imaged.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\jpeg62.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\libpng16d.dll
-C:\Users\i7\Desktop\Minden\ELTE\GPGPU\GPGPU-Assignment\src\x64\Debug\zlibd1.dll

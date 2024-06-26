@@ -4,3 +4,4 @@ src/.vs
 .cache/clangd/index
 output.md
 /old/*
+src/x64

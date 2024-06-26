@@ -4,8 +4,9 @@
 #define CL_TARGET_OPENCL_VERSION 300
 #define CL_HPP_TARGET_OPENCL_VERSION 300
 
-#include <CL/opencl.hpp>
 #include <GL/glew.h>
+
+#include <CL/opencl.hpp>
 #include <chrono>
 #include <cstddef>
 #include <exception>
@@ -13,10 +14,7 @@
 #include <mutex>
 #include <vector>
 
-#include "Layout.h"
-
 static const int PARTICLE_COUNT = 1e+4;
-
 
 struct ParticleData {
   cl_float3 velocity;
@@ -48,6 +46,7 @@ class NBodyTimer {
  public:
   float Tick();
   NBodyTimer();
+
  private:
   std::chrono::high_resolution_clock::time_point prev;
 };
@@ -65,8 +64,8 @@ class NBody {
   /// @param extra_allocate_particle_count: the additional space allocated on
   /// the GPU to allow the user to add in particles after the simulation has
   /// started.
-  void Start(std::function<ParticleSetDescription(const size_t, const float)>
-                 generating_func);
+  void Start(
+      std::function<ParticleSetDescription(const size_t)> generating_func);
 
   // Clear Buffers
   // NOTE: MUST BE CALLED BEFORE CLEARING OpenGL Buffers!
@@ -91,11 +90,11 @@ class NBody {
   std::function<ParticleSetDescription(const size_t)> generating_function;
   float distanceThreshold = 0.1f;
   float eps = 1e-3f;
-  //float gravitational_constant = 6.67430e-11f;
+  // float gravitational_constant = 6.67430e-11f;
   float gravitational_constant = 6.67430e-4f;
   std::mutex m_sim_data_mutex;
 
-  size_t START_DEPTH = 4;
+  size_t START_DEPTH = 3;
 
   float default_mass = 50000;
 
