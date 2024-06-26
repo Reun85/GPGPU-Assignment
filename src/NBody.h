@@ -3,32 +3,20 @@
 #define CL_HPP_ENABLE_EXCEPTIONS
 #define CL_TARGET_OPENCL_VERSION 300
 #define CL_HPP_TARGET_OPENCL_VERSION 300
-#include <GL/glew.h>
 
 #include <CL/opencl.hpp>
+#include <GL/glew.h>
 #include <chrono>
 #include <cstddef>
 #include <exception>
 #include <functional>
-#include <glm/glm.hpp>
 #include <mutex>
 #include <vector>
 
+#include "Layout.h"
+
 static const int PARTICLE_COUNT = 1e+4;
 
-class NBodyTimer {
- public:
-  float Tick() {
-    auto now = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<float> duration = now - prev;
-    prev = now;
-    return duration.count();
-  }
-  NBodyTimer() : prev(std::chrono::high_resolution_clock::now()) {}
-
- private:
-  std::chrono::high_resolution_clock::time_point prev;
-};
 
 struct ParticleData {
   cl_float3 velocity;
@@ -38,11 +26,7 @@ struct ParticleData {
   // TODO: measure this.
   cl_float3 force;
 
-  bool operator==(const ParticleData& rhs) {
-    return velocity.x == rhs.velocity.x && velocity.y == rhs.velocity.y &&
-           velocity.z == rhs.velocity.z && force.x == rhs.force.x &&
-           force.y == rhs.force.y && force.z == rhs.force.z;
-  }
+  bool operator==(const ParticleData& rhs);
   bool operator!=(const ParticleData& rhs) { return !(*this == rhs); }
 };
 
@@ -60,9 +44,13 @@ typedef struct {
 using ParticleSetDescription =
     std::pair<std::vector<cl_float4>, std::vector<ParticleData>>;
 
-ParticleSetDescription GalaxiesClashing(const size_t size, const float);
-ParticleSetDescription Galaxy(const size_t size, const float);
-ParticleSetDescription UniformLayout(const size_t size, const float);
+class NBodyTimer {
+ public:
+  float Tick();
+  NBodyTimer();
+ private:
+  std::chrono::high_resolution_clock::time_point prev;
+};
 
 class NBody {
  public:
@@ -70,8 +58,7 @@ class NBody {
   ~NBody();
 
   // Initialise OpenCL, attach OpenGL Buffers
-  bool Init(GLuint VBOIndex, const size_t particle_count,
-            const size_t extra_allocate_particle_count = 0);
+  bool Init(GLuint VBOIndex, const size_t particle_count);
 
   /// Generates the particles and moves them to the GPU.
   /// @param particle_count: the number passed to generating func
@@ -79,7 +66,7 @@ class NBody {
   /// the GPU to allow the user to add in particles after the simulation has
   /// started.
   void Start(std::function<ParticleSetDescription(const size_t, const float)>
-                 generating_func =GalaxiesClashing);
+                 generating_func);
 
   // Clear Buffers
   // NOTE: MUST BE CALLED BEFORE CLEARING OpenGL Buffers!
@@ -101,7 +88,6 @@ class NBody {
   //          │                  Simulation Constants                   │
   //          ╰─────────────────────────────────────────────────────────╯
   size_t particle_count;
-  size_t allocated_particle_count;
   std::function<ParticleSetDescription(const size_t)> generating_function;
   float distanceThreshold = 0.1f;
   float eps = 1e-3f;

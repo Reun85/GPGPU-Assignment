@@ -199,7 +199,7 @@ __kernel void CreateOctree(__global Node* nodes, const int start_depth) {
   size_t start_ind = 0;
   size_t end_ind = 1;
 
-  // START_DEPTH - 1, we will do the last block with Z indexing
+  // start_depth - 1, we will do the last block with Z indexing
   for (size_t i = 0; i < start_depth - 1; i++) {
     for (size_t j = start_ind; j < end_ind; j++) {
       Node* current = &nodes[j];
@@ -299,7 +299,7 @@ __kernel void BuildOctree(__global const float4* particles_pos,
   for (size_t id = start_box_index; id < end_box_index; id++) {
     Node* currentstarter = &nodes[start_ind + id];
 
-    // Since the space is split into 8^START_DEPTH, we can extract the i, j, k
+    // Since the space is split into 8^start_depth, we can extract the i, j, k
     // coordinates as such:
     size_t tmp = id;
     const size_t i = tmp & (stride - 1);

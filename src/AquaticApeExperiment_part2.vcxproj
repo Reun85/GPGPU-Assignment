@@ -87,6 +87,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Layout.cpp" />
     <ClCompile Include="MyApp.cpp" />
     <ClCompile Include="includes\SDL_GLDebugMessageCallback.cpp" />
     <ClCompile Include="main.cpp" />
@@ -94,10 +95,13 @@
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
     <ClCompile Include="NBody.cpp" />
+    <ClCompile Include="SimulationSettings.cpp" />
+    <ClCompile Include="SimulationSettings.h" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="includes\FallingObject.h" />
     <ClInclude Include="includes\SUpdateInfo.h" />
+    <ClInclude Include="Layout.h" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />

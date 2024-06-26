@@ -1,15 +1,24 @@
 #include "NBody.h"
 // #define DEBUG
 
-#include <CL/cl_gl.h>
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <windows.h>
 
 #include <CL/opencl.hpp>
-#include <glm/matrix.hpp>
 #include <iostream>
 #include <vector>
+bool ParticleData::operator==(const ParticleData& rhs) {
+  return velocity.x == rhs.velocity.x && velocity.y == rhs.velocity.y &&
+         velocity.z == rhs.velocity.z && force.x == rhs.force.x &&
+         force.y == rhs.force.y && force.z == rhs.force.z;
+}
+float NBodyTimer::Tick() {
+  auto now = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<float> duration = now - prev;
+  prev = now;
+  return duration.count();
+}
+NBodyTimer::NBodyTimer() : prev(std::chrono::high_resolution_clock::now()) {}
 
 constexpr size_t global_work_size_from_item_per_thread(
     const size_t total_work_size, const size_t items_per_thread) {
@@ -62,164 +71,19 @@ std::ostream& operator<<(std::ostream& os, const Node& n) {
 }
 
 #include <fstream>
-#include <glm/ext/matrix_transform.hpp>
 #include <iostream>
 #include <mutex>
 #include <oclutils.hpp>
 #include <random>
 #include <vector>
 
-ParticleSetDescription UniformLayout(const size_t size,
-                                     const float default_mass) {
-  std::vector<cl_float3> particles;
-  cl_float3 empt;
-  empt.x = 0;
-  empt.y = 0;
-  empt.z = 0;
-  ParticleData def_data{empt, empt};
-  std::vector<ParticleData> particle_data(size, def_data);
-  particles.reserve(size);
-
-  std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0, 1.0);
-
-  for (size_t i = 0; i < size; ++i) {
-    float x = distribution(generator);
-    float y = distribution(generator);
-    float z = distribution(generator);
-    cl_float3 t;
-    t.x = x;
-    t.y = y;
-    t.z = z;
-    t.w = default_mass;
-
-    particles.push_back(t);
-  }
-
-  return std::make_pair(particles, particle_data);
-}
-
-ParticleSetDescription GalaxiesClashing(const size_t size,
-                                        const float default_mass) {
-  const glm::vec3 g1_center = glm::vec3(3, 3, 3);
-  const glm::vec3 g2_center = -g1_center;
-  // Pulled towards this =>
-  const glm::vec3 g_center = glm::vec3(0, 0, 0);
-
-  const glm::vec3 g1_velocity = (g2_center - g1_center) * 0.01f;
-  const glm::vec3 g2_velocity = glm::vec3(0);
-
-  std::vector<cl_float3> particles;
-  std::vector<ParticleData> particle_data;
-  particles.reserve(size);
-  particle_data.reserve(size);
-
-  std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0, 1.0);
-
-  float PI = 3.14159265359;
-  float r = distribution(generator) *  PI;
-  for (size_t i = 0; i < size / 2; ++i) {
-    float rng1 = distribution(generator) * 2.f * PI;
-    float rng2 = distribution(generator);
-    float rng3 = distribution(generator);
-    float rng4 = distribution(generator);
-    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * default_mass; 
-    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
-                               sin(rng1) * rng2 * 1.0f);
-    glm::mat4 rotationMatrix =
-        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
-    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g1_center;
-
-    glm::vec3 tang_vel = glm::vec3(glm::normalize(
-        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g1_center)));
-    float dis = glm::distance(glm::vec3(_pos), g1_center);
-    glm::vec3 rnd_vel =
-        tang_vel * (dis)*25.f;
-    rnd_vel /= 100;
-
-    rnd_vel += g1_velocity;
-
-    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
-    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
-  }
-   r = distribution(generator) * PI;
-  for (size_t i = 0; i < size-size / 2; ++i) {
-    float rng1 = distribution(generator) * 2.f * PI;
-    float rng2 = distribution(generator);
-    float rng3 = distribution(generator);
-    float rng4 = distribution(generator);
-    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * default_mass*0.25f;
-    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
-                               sin(rng1) * rng2 * 1.0f);
-    glm::mat4 rotationMatrix =
-        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
-    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g2_center;
-
-    glm::vec3 tang_vel = glm::vec3(glm::normalize(
-        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g2_center)));
-    float dis = glm::distance(glm::vec3(_pos), g2_center);
-    glm::vec3 rnd_vel =
-       tang_vel * (dis)*25.f;
-    rnd_vel /= 100;
-
-    rnd_vel += g2_velocity;
-
-    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
-    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
-  }
-  return std::make_pair(particles, particle_data);
-}
-
-ParticleSetDescription Galaxy(const size_t size, const float default_mass) {
-  const glm::vec3 g_center = glm::vec3(0, 0, 0);
-  const glm::vec3 g_velocity = glm::vec3(0, 0, 0);
-
-  std::vector<cl_float3> particles;
-  std::vector<ParticleData> particle_data;
-  particles.reserve(size);
-  particle_data.reserve(size);
-
-  std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0, 1.0);
-
-  float PI = 3.14159265359;
-  float r = distribution(generator) * PI;
-  for (size_t i = 0; i < size; ++i) {
-    float rng1 = distribution(generator) * 2.f * PI;
-    float rng2 = distribution(generator);
-    float rng3 = distribution(generator);
-    float rng4 = distribution(generator);
-    rng4 = pow((rng4 + 1.0f) / 2.0f, 1.0f) * 7500.0f;  // 3750 ~ 7500
-    glm::vec3 _pos = glm::vec3(cos(rng1) * rng2 * 1.0f, rng3 / 20.0f,
-                               sin(rng1) * rng2 * 1.0f);
-    glm::mat4 rotationMatrix =
-        glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
-    _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g_center;
-
-    glm::vec3 tang_vel = glm::vec3(glm::normalize(
-        glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g_center)));
-    float dis = glm::distance(glm::vec3(_pos), g_center);
-    glm::vec3 rnd_vel =
-        tang_vel * (dis)*25.f;
-    rnd_vel /= 100;
-
-    rnd_vel += g_velocity;
-
-    particles.push_back({{_pos.x, _pos.y, _pos.z, rng4}});
-    particle_data.push_back({{rnd_vel.x, rnd_vel.y, rnd_vel.z}, {{0, 0, 0}}});
-  }
-  return std::make_pair(particles, particle_data);
-}
 
 using namespace cl;
 NBody::NBody() {}
 NBody::~NBody() {}
 
-bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
-                 const size_t extra_allocate_particle_count) {
+bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
   particle_count = particle_num;
-  allocated_particle_count = extra_allocate_particle_count + particle_count;
 
   try {
     ///////////////////////////
@@ -304,10 +168,10 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num,
     Nodes =
         cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(Node) * allocatedNodes);
     particledata = cl::Buffer(context, CL_MEM_READ_WRITE,
-                              sizeof(ParticleData) * allocated_particle_count);
+                              sizeof(ParticleData) * particle_count);
 
     particlepos = cl::Buffer(context, CL_MEM_READ_WRITE,
-                             sizeof(cl_float4) * allocated_particle_count);
+                             sizeof(cl_float4) * particle_count);
     openGLparticlepos = cl::BufferGL(context, CL_MEM_WRITE_ONLY, VBOIndex);
 
     // Intermediate buffers
