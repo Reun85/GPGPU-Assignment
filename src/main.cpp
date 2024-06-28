@@ -216,8 +216,6 @@ int main(int argc, char* args[]) {
       if (SSE.GetCurrSettings().particle_count != app.GetParticleCount())
         app.SetParticleCount(SSE.GetCurrSettings().particle_count);
 
-
-
       if (!nbody.InitCL(app.GetVBOAddress())) {
         SDL_LogError(
             SDL_LOG_CATEGORY_ERROR,
@@ -229,9 +227,10 @@ int main(int argc, char* args[]) {
 
       while (!quit) {
         // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
+        bool is_mouse_captured;
         while (SDL_PollEvent(&ev)) {
           ImGui_ImplSDL2_ProcessEvent(&ev);
-          bool is_mouse_captured =
+          is_mouse_captured =
               ImGui::GetIO().WantCaptureMouse;  // kell-e az imgui-nak az egér
           bool is_keyboard_captured =
               ImGui::GetIO()
@@ -305,7 +304,7 @@ int main(int argc, char* args[]) {
           app.UpdatedParticles();
         }
         app.Update(updateInfo);
-        app.Render();
+        app.Render(is_mouse_captured);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();  // Ezután lehet imgui parancsokat hívni,
