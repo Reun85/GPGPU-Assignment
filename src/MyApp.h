@@ -28,7 +28,7 @@ class CMyApp {
   void Clean();
 
   void Update(const SUpdateInfo &);
-  void Render();
+  void Render(bool);
   void RenderGUI();
 
   void KeyboardDown(const SDL_KeyboardEvent &);

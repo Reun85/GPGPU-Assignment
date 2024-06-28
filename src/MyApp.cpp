@@ -243,7 +243,6 @@ void CMyApp::Update(const SUpdateInfo &updateInfo) {
   if (updated) {
     needstoupdate = true;
   }
-  // A table flip megnyomása után az objektumokat frissítjük.
 }
 
 void CMyApp::UpdatedParticles() { needstoupdate = true; }
@@ -287,12 +286,12 @@ void CMyApp::SetParticleCount(int count) {
   glBindVertexArray(0);
 }
 
-void CMyApp::Render() {
+void CMyApp::Render(bool imgui_captured_mouse) {
   static constexpr bool drawaxes = false;
   //
   // Axes
   //
-  if (needstoupdate) {
+  if (needstoupdate || imgui_captured_mouse) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (drawaxes) {
       glBindVertexArray(0);

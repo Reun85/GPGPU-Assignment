@@ -20,6 +20,9 @@
 #include "Communication.hpp"
 #include "MyApp.h"
 #include "NBody.h"
+inline void Test(const char* id) {
+  std::cout << "Fail here? #" << id << std::endl;
+}
 void SecondThreadFunction(NBody& body, Communication& comm) {
   const bool only_once = false;
   do {

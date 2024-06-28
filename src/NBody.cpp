@@ -194,8 +194,9 @@ bool NBody::ChangeSettings(std::optional<SimulationSettings> s) {
       !s.has_value() || settings.allocatedNodes != s->allocatedNodes ||
       settings.particle_count != s->particle_count ||
       settings.boundingbox_work_group_size != s->boundingbox_work_group_size;
-  bool 
-  requires_restart = recreate_buffers || settings.start_depth !=s->start_depth || s->layoutchanged;
+  bool requires_restart = recreate_buffers ||
+                          settings.start_depth != s->start_depth ||
+                          s->layoutchanged;
   if (s.has_value()) settings = *s;
   if (recreate_buffers) {
     std::lock_guard lock(m_writing_mutex);
@@ -307,7 +308,6 @@ void NBody::doTesting() {
   std::vector<ParticleData> GPUdata(settings.particle_count);
   cl_float3 min;
   cl_float3 max;
-  cl_int temp;
   cl_int itr;
 
   command_queue.enqueueReadBuffer(Nodes, CL_FALSE, 0,
@@ -400,8 +400,8 @@ void NBody::Calculate() {
 
     command_queue.enqueueNDRangeKernel(
         buildOctree, cl::NullRange,
-        cl::NDRange(            (1uLL << (3uLL * settings.start_depth))),
-            
+        cl::NDRange((1uLL << (3uLL * settings.start_depth))),
+
         cl::NullRange, &ev3, &ev4[0]);
     int usedNodes;
     command_queue.enqueueReadBuffer(itrBuffer, CL_FALSE, 0, sizeof(cl_int),
@@ -432,9 +432,6 @@ void NBody::Calculate() {
     std::cout << "octree - done" << std::endl;
 #endif
     cl::WaitForEvents(ev6);
-
-
-
 
 #ifdef DEBUG
     std::cout << "barneshut - done" << std::endl;
@@ -471,14 +468,10 @@ void NBody::Calculate() {
     simulation_results.usedNodes = usedNodes;
     simulation_results.allocatedNodes = settings.allocatedNodes;
     if (usedNodes > settings.allocatedNodes) {
-      std::cout << "Used more nodes than allocated, exiting" << std::endl;
       throw Error(CL_OUT_OF_RESOURCES, "Used more nodes than allocated");
     }
   } catch (cl::Error error) {
-    std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
-              << std::endl;
-
-    std::exit(1);
+    throw error;
   }
 
   simulation_results.boundingboxstage1ms = getMSTime(ev1[0]);
@@ -504,12 +497,14 @@ void NBody::Start(
   ParticleSetDescription set = settings.layout(settings.particle_count);
 
   std::vector<cl_float3> pos = set.first;
+  pos.resize(settings.particle_count);
   std::vector<ParticleData> data = set.second;
+  data.resize(settings.particle_count);
 
   try {
     // These have to be done here since we will transfer these over to openGL
 
-      m_writing_mutex.lock();
+    m_writing_mutex.lock();
     command_queue.enqueueWriteBuffer(
         particlepos, CL_FALSE, 0, pos.size() * sizeof(cl_float4), pos.data());
 
@@ -520,7 +515,7 @@ void NBody::Start(
     command_queue.enqueueNDRangeKernel(createOctree, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1));
     command_queue.finish();
-  m_writing_mutex.unlock();
+    m_writing_mutex.unlock();
     std::lock_guard lock(m_done_mutex);
     m_newdata = true;
     // This can wait :)

@@ -88,6 +88,7 @@ bool Camera::Update(float _deltaTime) {
     m_projectionDirty = false;
     return true;
   }
+  return false;
 }
 
 void Camera::UpdateUV(float du, float dv) {
@@ -117,13 +118,12 @@ void Camera::UpdateParams() {
     m_right = glm::normalize(glm::cross(m_forward, m_worldUp));
     m_up = glm::normalize(glm::cross(m_right, m_forward));
   } else {
-  m_eye = m_at - m_distance * lookDirection;
+    m_eye = m_at - m_distance * lookDirection;
 
-  m_up = m_worldUp;
-  m_right = glm::normalize(glm::cross(lookDirection, m_worldUp));
+    m_up = m_worldUp;
+    m_right = glm::normalize(glm::cross(lookDirection, m_worldUp));
 
-  m_forward = glm::cross(m_up, m_right);
-
+    m_forward = glm::cross(m_up, m_right);
   }
   m_viewDirty = true;
 }
