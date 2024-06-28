@@ -133,6 +133,7 @@ SimulationSettingsEditor::State SimulationSettingsEditor::Render() {
 
 void SimulationSettingsEditor::Apply() {
   crash = std::nullopt;
+  curr.layoutchanged = currlayout != prevlayout;
   curr.layout = currlayout.GetResult();
   prev = curr;
   prevlayout = currlayout;

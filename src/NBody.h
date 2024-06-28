@@ -49,6 +49,7 @@ class NBody {
   void UpdateCommunication(Communication& comm);
 
  private:
+	 // Tests
   void doTesting();
 
   //          ╭─────────────────────────────────────────────────────────╮

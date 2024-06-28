@@ -172,8 +172,8 @@ __kernel void BoundingBoxStage1(__global const float4* particles,
   __local float3 local_min[256];
   __local float3 local_max[256];
 
-  float3 min_pos = (float3)(FLT_MAX, FLT_MAX, FLT_MAX);
-  float3 max_pos = (float3)(-FLT_MAX, -FLT_MAX, -FLT_MAX);
+  float3 min_pos = particles[0].xyz;
+  float3 max_pos = particles[0].xyz;
 
   int items_per_work_item = (particle_count + num_groups - 1) / num_groups;
   int start = global_id * items_per_work_item;

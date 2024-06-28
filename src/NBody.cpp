@@ -190,12 +190,14 @@ bool NBody::InitCL(const GLuint& VBOIndex) {
 }
 
 bool NBody::ChangeSettings(std::optional<SimulationSettings> s) {
-  bool requires_restart =
+  bool recreate_buffers =
       !s.has_value() || settings.allocatedNodes != s->allocatedNodes ||
       settings.particle_count != s->particle_count ||
       settings.boundingbox_work_group_size != s->boundingbox_work_group_size;
+  bool 
+  requires_restart = recreate_buffers || settings.start_depth !=s->start_depth || s->layoutchanged;
   if (s.has_value()) settings = *s;
-  if (requires_restart) {
+  if (recreate_buffers) {
     std::lock_guard lock(m_writing_mutex);
     if (s.has_value()) {
       // Clear the buffers.
@@ -430,6 +432,10 @@ void NBody::Calculate() {
     std::cout << "octree - done" << std::endl;
 #endif
     cl::WaitForEvents(ev6);
+
+
+
+
 #ifdef DEBUG
     std::cout << "barneshut - done" << std::endl;
 #endif

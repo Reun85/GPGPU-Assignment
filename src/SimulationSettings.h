@@ -25,6 +25,7 @@ class SimulationSettings {
  public:
   int particle_count;
   LayoutResultFunction layout;
+  bool layoutchanged=false;
   float distanceThreshold;
   float eps;
   // float gravitational_constant = 6.67430e-11f;
