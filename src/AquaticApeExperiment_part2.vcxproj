@@ -78,7 +78,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>SDL_MAIN_HANDLED;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir)\vendor\OpenCL;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -95,13 +96,16 @@
     <ClCompile Include="includes\Camera.cpp" />
     <ClCompile Include="includes\ObjParser.cpp" />
     <ClCompile Include="NBody.cpp" />
+    <ClCompile Include="ParticleDescription.h" />
     <ClCompile Include="SimulationSettings.cpp" />
-    <ClCompile Include="SimulationSettings.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="vendor\CLPreComp.h" />
+    <ClInclude Include="Communication.hpp" />
     <ClInclude Include="includes\FallingObject.h" />
     <ClInclude Include="includes\SUpdateInfo.h" />
     <ClInclude Include="Layout.h" />
+    <ClInclude Include="Mut.hpp" />
     <ClInclude Include="MyApp.h" />
     <ClInclude Include="includes\SDL_GLDebugMessageCallback.h" />
     <ClInclude Include="includes\GLUtils.hpp" />
@@ -109,11 +113,11 @@
     <ClInclude Include="includes\ObjParser.h" />
     <ClInclude Include="includes\ParametricSurfaceMesh.hpp" />
     <ClInclude Include="NBody.h" />
+    <ClInclude Include="SimulationSettings.h" />
     <ClInclude Include="vendor\oclutils.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="imgui.ini" />
-    <None Include="openclkernels.c" />
     <None Include="shaders\Frag_Lighting.frag" />
     <None Include="shaders\Frag_PosCol.frag" />
     <None Include="shaders\Frag_skybox.frag" />
@@ -123,6 +127,9 @@
     <None Include="shaders\Vert_skybox.vert" />
     <None Include="shaders\Vert_traj.vert" />
     <None Include="shaders\Frag_axes.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="test.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

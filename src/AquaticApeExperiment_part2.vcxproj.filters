@@ -48,10 +48,10 @@
     <ClCompile Include="Layout.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SimulationSettings.h">
+    <ClCompile Include="SimulationSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SimulationSettings.cpp">
+    <ClCompile Include="ParticleDescription.h">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -89,6 +89,18 @@
     <ClInclude Include="Layout.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Mut.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SimulationSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Communication.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vendor\CLPreComp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\Frag_Lighting.frag" />
@@ -101,6 +113,8 @@
     <None Include="imgui.ini" />
     <None Include="shaders\Vert_Point.vert" />
     <None Include="shaders\Frag_axes.frag" />
-    <None Include="openclkernels.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="test.txt" />
   </ItemGroup>
 </Project>

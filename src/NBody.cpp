@@ -1,7 +1,6 @@
 #include "NBody.h"
 // #define DEBUG
 
-#include <CL/cl_gl.h>
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 #if defined(_WIN32)
@@ -10,7 +9,6 @@
 #include <GL/glx.h>
 #endif
 
-#include <CL/opencl.hpp>
 #include <iostream>
 #include <vector>
 bool ParticleData::operator==(const ParticleData& rhs) {
@@ -84,12 +82,10 @@ std::ostream& operator<<(std::ostream& os, const Node& n) {
 #include <vector>
 
 using namespace cl;
-NBody::NBody() {}
+NBody::NBody(const SimulationSettings& s) : settings(s), simulation_results() {}
 NBody::~NBody() {}
 
-bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
-  particle_count = particle_num;
-
+bool NBody::InitCL(const GLuint& VBOIndex) {
   try {
     ///////////////////////////
     // Initialize OpenCL API //
@@ -151,7 +147,7 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
     /////////////////////////////////
 
     // Read source file
-    std::ifstream sourceFile("openclkernels.c");
+    std::ifstream sourceFile("openclkernels.cl");
     std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
                            (std::istreambuf_iterator<char>()));
 
@@ -168,95 +164,22 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
 
       throw error;
     }
-
     // Generate Buffers
-    Nodes = cl::Buffer(context, CL_MEM_READ_WRITE,
-                       sizeof(Node) * allocatedNodes / 100);
-    particledata = cl::Buffer(context, CL_MEM_READ_WRITE,
-                              sizeof(ParticleData) * particle_count);
-
-    particlepos = cl::Buffer(context, CL_MEM_READ_WRITE,
-                             sizeof(cl_float4) * particle_count);
-    openGLparticlepos = cl::BufferGL(context, CL_MEM_WRITE_ONLY, VBOIndex);
-
-    // Intermediate buffers
-    minValuesBuffer =
-        cl::Buffer(context, CL_MEM_READ_WRITE,
-                   sizeof(cl_float3) * boundingbox_work_group_size, NULL);
-    maxValuesBuffer =
-        cl::Buffer(context, CL_MEM_READ_WRITE,
-                   sizeof(cl_float3) * boundingbox_work_group_size, NULL);
-    globalMinBuffer =
-        cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_float3), NULL);
-    globalMaxBuffer =
-        cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_float3), NULL);
-    itrBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_int), NULL);
-
-    GLbuffers.push_back(openGLparticlepos);
 
     // Make kernel
     boundingbox = cl::Kernel(program, "BoundingBoxStage1");
-
-    boundingbox.setArg(0, particlepos);
-    boundingbox.setArg(1, minValuesBuffer);
-    boundingbox.setArg(2, maxValuesBuffer);
-    boundingbox.setArg(3, static_cast<const int>(particle_count));
-    boundingbox.setArg(4, boundingbox_work_group_size);
-
     boundingboxstage2 = cl::Kernel(program, "BoundingBoxStage2");
-    boundingboxstage2.setArg(0, minValuesBuffer);
-    boundingboxstage2.setArg(1, maxValuesBuffer);
-    boundingboxstage2.setArg(2, globalMinBuffer);
-    boundingboxstage2.setArg(3, globalMaxBuffer);
-    boundingboxstage2.setArg(4, boundingbox_work_group_size);
-
     createOctree = cl::Kernel(program, "CreateOctree");
-    createOctree.setArg(0, Nodes);
-    createOctree.setArg(1, static_cast<const int>(START_DEPTH));
-
     initOctree = cl::Kernel(program, "InitOctree");
-    initOctree.setArg(0, Nodes);
-    initOctree.setArg(1, static_cast<const int>(START_DEPTH));
-    initOctree.setArg(2, globalMinBuffer);
-    initOctree.setArg(3, globalMaxBuffer);
-    initOctree.setArg(4, itrBuffer);
-    initOctree.setArg(5, static_cast<const int>(allocatedNodes));
-
     buildOctree = cl::Kernel(program, "BuildOctree");
-    buildOctree.setArg(0, particlepos);
-    buildOctree.setArg(1, Nodes);
-    buildOctree.setArg(2, globalMinBuffer);
-    buildOctree.setArg(3, globalMaxBuffer);
-    buildOctree.setArg(4, static_cast<const int>(particle_count));
-    buildOctree.setArg(5, static_cast<const int>(START_DEPTH));
-    buildOctree.setArg(6, itrBuffer);
-    buildOctree.setArg(7, octree_items_per_thread);
-
     DivideByMass = cl::Kernel(program, "DivideCentersByMass");
-    DivideByMass.setArg(0, Nodes);
-    DivideByMass.setArg(1, itrBuffer);
-
     centerofMass = cl::Kernel(program, "CalculateCenterOfMass");
-    centerofMass.setArg(0, Nodes);
-    centerofMass.setArg(1, static_cast<const int>(START_DEPTH));
-    centerofMass.setArg(2, itrBuffer);
-
     barneshut = cl::Kernel(program, "BarnesHut");
-    barneshut.setArg(0, particlepos);
-    barneshut.setArg(1, particledata);
-    barneshut.setArg(2, Nodes);
-    barneshut.setArg(3, static_cast<const int>(particle_count));
-    barneshut.setArg(4, distanceThreshold);
-    barneshut.setArg(5, eps);
-    barneshut.setArg(6, gravitational_constant);
-    barneshut.setArg(7, barneshut_items_per_thread);
-
     positionupdate = cl::Kernel(program, "AddForces");
-    positionupdate.setArg(0, particlepos);
-    positionupdate.setArg(1, particledata);
-    positionupdate.setArg(2, static_cast<const int>(particle_count));
-    positionupdate.setArg(3, position_update_items_per_thread);
-    positionupdate.setArg(4, timestep);
+    VBO = VBOIndex;
+
+    ChangeSettings(std::nullopt);
+
   } catch (cl::Error error) {
     std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
               << std::endl;
@@ -264,6 +187,105 @@ bool NBody::Init(GLuint VBOIndex, const size_t particle_num) {
   }
 
   return true;
+}
+
+bool NBody::ChangeSettings(std::optional<SimulationSettings> s) {
+  bool requires_restart =
+      !s.has_value() || settings.allocatedNodes != s->allocatedNodes ||
+      settings.particle_count != s->particle_count ||
+      settings.boundingbox_work_group_size != s->boundingbox_work_group_size;
+  if (s.has_value()) settings = *s;
+  if (requires_restart) {
+    std::lock_guard lock(m_writing_mutex);
+    if (s.has_value()) {
+      // Clear the buffers.
+      Nodes = cl::Buffer();
+      particledata = cl::Buffer();
+      particlepos = cl::Buffer();
+      minValuesBuffer = cl::Buffer();
+      maxValuesBuffer = cl::Buffer();
+
+      globalMinBuffer = cl::Buffer();
+      globalMaxBuffer = cl::Buffer();
+      itrBuffer = cl::Buffer();
+      openGLparticlepos = cl::BufferGL();
+      GLbuffers.clear();
+    }
+    Nodes = cl::Buffer(context, CL_MEM_READ_WRITE,
+                       sizeof(Node) * settings.allocatedNodes);
+    particledata = cl::Buffer(context, CL_MEM_READ_WRITE,
+                              sizeof(ParticleData) * settings.particle_count);
+
+    particlepos = cl::Buffer(context, CL_MEM_READ_WRITE,
+                             sizeof(cl_float4) * settings.particle_count);
+
+    // Intermediate buffers
+    minValuesBuffer = cl::Buffer(
+        context, CL_MEM_READ_WRITE,
+        sizeof(cl_float3) * settings.boundingbox_work_group_size, NULL);
+    maxValuesBuffer = cl::Buffer(
+        context, CL_MEM_READ_WRITE,
+        sizeof(cl_float3) * settings.boundingbox_work_group_size, NULL);
+    // This generates the large buffers
+    globalMinBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_float3));
+    globalMaxBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_float3));
+    itrBuffer = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(cl_int));
+    openGLparticlepos = cl::BufferGL(context, CL_MEM_WRITE_ONLY, VBO);
+    GLbuffers.push_back(openGLparticlepos);
+  }
+
+  boundingbox.setArg(0, particlepos);
+  boundingbox.setArg(1, minValuesBuffer);
+  boundingbox.setArg(2, maxValuesBuffer);
+  boundingbox.setArg(3, settings.particle_count);
+  boundingbox.setArg(4, settings.boundingbox_work_group_size);
+
+  boundingboxstage2.setArg(0, minValuesBuffer);
+  boundingboxstage2.setArg(1, maxValuesBuffer);
+  boundingboxstage2.setArg(2, globalMinBuffer);
+  boundingboxstage2.setArg(3, globalMaxBuffer);
+  boundingboxstage2.setArg(4, settings.boundingbox_work_group_size);
+
+  createOctree.setArg(0, Nodes);
+  createOctree.setArg(1, settings.start_depth);
+
+  initOctree.setArg(0, Nodes);
+  initOctree.setArg(1, settings.start_depth);
+  initOctree.setArg(2, globalMinBuffer);
+  initOctree.setArg(3, globalMaxBuffer);
+  initOctree.setArg(4, itrBuffer);
+  initOctree.setArg(5, settings.allocatedNodes);
+
+  buildOctree.setArg(0, particlepos);
+  buildOctree.setArg(1, Nodes);
+  buildOctree.setArg(2, globalMinBuffer);
+  buildOctree.setArg(3, globalMaxBuffer);
+  buildOctree.setArg(4, settings.particle_count);
+  buildOctree.setArg(5, settings.start_depth);
+  buildOctree.setArg(6, itrBuffer);
+
+  DivideByMass.setArg(0, Nodes);
+  DivideByMass.setArg(1, itrBuffer);
+
+  centerofMass.setArg(0, Nodes);
+  centerofMass.setArg(1, settings.start_depth);
+  centerofMass.setArg(2, itrBuffer);
+
+  barneshut.setArg(0, particlepos);
+  barneshut.setArg(1, particledata);
+  barneshut.setArg(2, Nodes);
+  barneshut.setArg(3, settings.particle_count);
+  barneshut.setArg(4, settings.distanceThreshold);
+  barneshut.setArg(5, settings.eps);
+  barneshut.setArg(6, settings.gravitational_constant);
+  barneshut.setArg(7, settings.barneshut_items_per_thread);
+
+  positionupdate.setArg(0, particlepos);
+  positionupdate.setArg(1, particledata);
+  positionupdate.setArg(2, settings.particle_count);
+  positionupdate.setArg(3, settings.position_update_items_per_thread);
+  positionupdate.setArg(4, settings.timestep);
+  return requires_restart;
 }
 
 // Initialise OpenCL, attach OpenGL Buffers
@@ -278,11 +300,9 @@ constexpr size_t add8powers(const size_t exp) {
 
 void NBody::doTesting() {
   std::ofstream File("test.txt");
-  std::vector<Node> nodes(allocatedNodes);
-  std::vector<cl_float3>& pos = test_positions;
-  std::vector<cl_float3> GPUpos(pos.size());
-  std::vector<ParticleData>& data = test_data;
-  std::vector<ParticleData> GPUdata(data.size());
+  std::vector<Node> nodes(settings.allocatedNodes);
+  std::vector<cl_float3> GPUpos(settings.particle_count);
+  std::vector<ParticleData> GPUdata(settings.particle_count);
   cl_float3 min;
   cl_float3 max;
   cl_int temp;
@@ -290,8 +310,9 @@ void NBody::doTesting() {
 
   command_queue.enqueueReadBuffer(Nodes, CL_FALSE, 0,
                                   nodes.size() * sizeof(Node), nodes.data());
-  command_queue.enqueueReadBuffer(
-      particlepos, CL_FALSE, 0, pos.size() * sizeof(cl_float3), GPUpos.data());
+  command_queue.enqueueReadBuffer(particlepos, CL_FALSE, 0,
+                                  settings.particle_count * sizeof(cl_float3),
+                                  GPUpos.data());
   command_queue.enqueueReadBuffer(particledata, CL_FALSE, 0,
                                   GPUdata.size() * sizeof(ParticleData),
                                   GPUdata.data());
@@ -302,7 +323,6 @@ void NBody::doTesting() {
                                   sizeof(cl_float3), &max);
   command_queue.enqueueReadBuffer(itrBuffer, CL_FALSE, 0, sizeof(cl_int), &itr);
   command_queue.finish();
-  File << pos.size() << std::endl;
   File << "min: " << min << " max: " << max << std::endl;
   //  std::cout << "Found min: " << min << " max: " << max << std::endl;
   //
@@ -319,15 +339,10 @@ void NBody::doTesting() {
   //
   //  std::cout << "Actual min: " << min << " max: " << max << std::endl;
 
-  for (int i = 0; i < pos.size(); i++) {
-    if (pos[i].x != GPUpos[i].x || pos[i].y != GPUpos[i].y ||
-        pos[i].z != GPUpos[i].z || pos[i].w != GPUpos[i].w)
-      File << "Particle: " << i << " real " << pos[i] << " GPU " << GPUpos[i]
-           << std::endl;
+  for (int i = 0; i < settings.particle_count; i++) {
+    File << "Particle: " << i << " GPU " << GPUpos[i] << std::endl;
 
-    if (data[i] != GPUdata[i])
-      File << "ParticleDATA: " << i << " real " << data[i] << " GPU "
-           << GPUdata[i] << std::endl;
+    File << "ParticleDATA: " << i << " GPU " << GPUdata[i] << std::endl;
   }
 
   for (int i = 0; i < add8powers(3); i++) {
@@ -341,18 +356,16 @@ void NBody::doTesting() {
   for (int i = add8powers(3); i < itr; i++) {
     File << "index " << i << std::endl << nodes[i] << std::endl;
   }
-
-  // std::exit(1);
 }
 
-void printTime(cl::Event& ev, std::string name) {
+inline float getMSTime(cl::Event& ev) {
   cl_ulong start, end;
   ev.getProfilingInfo(CL_PROFILING_COMMAND_START, &start);
   ev.getProfilingInfo(CL_PROFILING_COMMAND_END, &end);
-  std::cout << name << " took " << (end - start) / 1e+06 << "ms" << std::endl;
+  return (end - start) / 1e+06;
 }
 
-void NBody::Calculate(NBodyTimer& timer) {
+void NBody::Calculate() {
   std::vector<cl::Event> ev1(1);
   std::vector<cl::Event> ev2(1);
   std::vector<cl::Event> ev3(1);
@@ -362,6 +375,7 @@ void NBody::Calculate(NBodyTimer& timer) {
   std::vector<cl::Event> ev6(1);
   std::vector<cl::Event> ev7(1);
   std::vector<cl::Event> evread(1);
+  float truedt;
   try {
 #ifdef DEBUG
     std::cout << "Starting calculation" << std::endl;
@@ -369,14 +383,14 @@ void NBody::Calculate(NBodyTimer& timer) {
     command_queue.enqueueNDRangeKernel(
         boundingbox, cl::NullRange,
         cl::NDRange(global_work_size_from_work_groups(
-            particle_count, boundingbox_work_group_size)),
-        cl::NDRange(boundingbox_work_group_size), nullptr, &ev1[0]);
+            settings.particle_count, settings.boundingbox_work_group_size)),
+        cl::NDRange(settings.boundingbox_work_group_size), nullptr, &ev1[0]);
 
     command_queue.enqueueNDRangeKernel(
         boundingboxstage2, cl::NullRange,
         cl::NDRange(global_work_size_from_work_groups(
-            particle_count, boundingbox_work_group_size)),
-        cl::NDRange(boundingbox_work_group_size), &ev1, &ev2[0]);
+            settings.particle_count, settings.boundingbox_work_group_size)),
+        cl::NDRange(settings.boundingbox_work_group_size), &ev1, &ev2[0]);
 
     command_queue.enqueueNDRangeKernel(initOctree, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1), &ev2,
@@ -384,8 +398,8 @@ void NBody::Calculate(NBodyTimer& timer) {
 
     command_queue.enqueueNDRangeKernel(
         buildOctree, cl::NullRange,
-        cl::NDRange(global_work_size_from_item_per_thread(
-            (1uLL << (3uLL * START_DEPTH)), octree_items_per_thread)),
+        cl::NDRange(            (1uLL << (3uLL * settings.start_depth))),
+            
         cl::NullRange, &ev3, &ev4[0]);
     int usedNodes;
     command_queue.enqueueReadBuffer(itrBuffer, CL_FALSE, 0, sizeof(cl_int),
@@ -401,13 +415,15 @@ void NBody::Calculate(NBodyTimer& timer) {
     command_queue.enqueueNDRangeKernel(centerofMass, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1), &ev4,
                                        &ev51[0]);
-    command_queue.enqueueNDRangeKernel(DivideByMass, cl::NullRange,
-                                       cl::NDRange(divide_by_mass_threads),
-                                       cl::NullRange, &ev51, &ev5[0]);
+    command_queue.enqueueNDRangeKernel(
+        DivideByMass, cl::NullRange,
+        cl::NDRange(settings.divide_by_mass_threads), cl::NullRange, &ev51,
+        &ev5[0]);
+
     command_queue.enqueueNDRangeKernel(
         barneshut, cl::NullRange,
         cl::NDRange(global_work_size_from_item_per_thread(
-            particle_count, barneshut_items_per_thread)),
+            settings.particle_count, settings.barneshut_items_per_thread)),
         cl::NullRange, &ev5, &ev6[0]);
 #ifdef DEBUG
     cl::WaitForEvents(ev4);
@@ -419,15 +435,19 @@ void NBody::Calculate(NBodyTimer& timer) {
 #endif
 
     m_writing_mutex.lock();
-    float dt = timer.Tick();
-    std::cout << "UPS: " << 1.f / dt << std::endl;
-    dt = std::min(dt, 0.2f);
+    truedt = timer.Tick();
+#if defined(_WIN32)
+    float dt = min(truedt, 0.2f);
+#elif defined(__linux__)
+    float dt = std::min(truedt, 0.2f);
+#endif
 
     positionupdate.setArg(4, dt);
     command_queue.enqueueNDRangeKernel(
         positionupdate, cl::NullRange,
         cl::NDRange(global_work_size_from_item_per_thread(
-            particle_count, position_update_items_per_thread)),
+            settings.particle_count,
+            settings.position_update_items_per_thread)),
         cl::NullRange, &ev6, &ev7[0]);
 
     cl::WaitForEvents(ev7);
@@ -441,11 +461,12 @@ void NBody::Calculate(NBodyTimer& timer) {
     m_done_mutex.unlock();
 
     cl::WaitForEvents(evread);
-    std::cout << "Used nodes: " << usedNodes << " Allocated: " << allocatedNodes
-              << std::endl;
-    if (usedNodes > allocatedNodes) {
+#
+    simulation_results.usedNodes = usedNodes;
+    simulation_results.allocatedNodes = settings.allocatedNodes;
+    if (usedNodes > settings.allocatedNodes) {
       std::cout << "Used more nodes than allocated, exiting" << std::endl;
-      std::exit(1);
+      throw Error(CL_OUT_OF_RESOURCES, "Used more nodes than allocated");
     }
   } catch (cl::Error error) {
     std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
@@ -454,32 +475,37 @@ void NBody::Calculate(NBodyTimer& timer) {
     std::exit(1);
   }
 
-  printTime(ev1[0], "boundingbox");
-  printTime(ev2[0], "boundingboxstage2");
-  printTime(ev3[0], "initOctree");
-  printTime(ev4[0], "buildOctree");
-  printTime(ev5[0], "centerofMass");
-  printTime(ev51[0], "dividecenterofmass");
-  printTime(ev6[0], "barneshut");
-  printTime(ev7[0], "positionupdate");
+  simulation_results.boundingboxstage1ms = getMSTime(ev1[0]);
+  simulation_results.boundingboxstage2ms = getMSTime(ev2[0]);
+  simulation_results.initOctreems = getMSTime(ev3[0]);
+  simulation_results.buildOctreems = getMSTime(ev4[0]);
+  simulation_results.centerofMassms = getMSTime(ev5[0]);
+  simulation_results.dividecenterofmassms = getMSTime(ev51[0]);
+  simulation_results.barneshutms = getMSTime(ev6[0]);
+  simulation_results.positionupdatems = getMSTime(ev7[0]);
+  simulation_results.deltaTimesecond = truedt;
 }
 
 void NBody::Clean() {}
 
+void NBody::UpdateCommunication(Communication& comm) {
+  comm.SetSimulationData(simulation_results);
+}
+
 void NBody::Start(
 
-    std::function<ParticleSetDescription(const size_t)> generating_func) {
-  ParticleSetDescription set = generating_func(particle_count);
+) {
+  ParticleSetDescription set = settings.layout(settings.particle_count);
+
   std::vector<cl_float3> pos = set.first;
   std::vector<ParticleData> data = set.second;
-  test_positions = set.first;
-  test_data = set.second;
 
   try {
     // These have to be done here since we will transfer these over to openGL
 
+      m_writing_mutex.lock();
     command_queue.enqueueWriteBuffer(
-        particlepos, CL_FALSE, 0, pos.size() * sizeof(cl_float3), pos.data());
+        particlepos, CL_FALSE, 0, pos.size() * sizeof(cl_float4), pos.data());
 
     command_queue.enqueueWriteBuffer(particledata, CL_FALSE, 0,
                                      data.size() * sizeof(ParticleData),
@@ -488,11 +514,12 @@ void NBody::Start(
     command_queue.enqueueNDRangeKernel(createOctree, cl::NullRange,
                                        cl::NDRange(1), cl::NDRange(1));
     command_queue.finish();
+  m_writing_mutex.unlock();
+    std::lock_guard lock(m_done_mutex);
+    m_newdata = true;
     // This can wait :)
   } catch (cl::Error error) {
-    std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
-              << std::endl;
-    std::exit(1);
+    throw error;
   }
 }
 
@@ -515,23 +542,14 @@ bool NBody::TryAndWriteData() {
       std::vector<cl::Event> ev1(1);
       std::vector<cl::Event> ev2(1);
       std::vector<cl::Event> ev3(1);
-      // copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr,
-      // &ev1[0]);
-      //  copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos,
-      //  0, 0,
-      //                                      particle_count *
-      //                                      sizeof(glm::vec3), &ev1, &ev2[0]);
-      //  copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
       copy_command_queue.enqueueAcquireGLObjects(&GLbuffers, nullptr, &ev1[0]);
-      copy_command_queue.enqueueCopyBuffer(particlepos, openGLparticlepos, 0, 0,
-                                           particle_count * sizeof(cl_float4),
-                                           &ev1, &ev2[0]);
+      copy_command_queue.enqueueCopyBuffer(
+          particlepos, openGLparticlepos, 0, 0,
+          settings.particle_count * sizeof(cl_float4), &ev1, &ev2[0]);
       copy_command_queue.enqueueReleaseGLObjects(&GLbuffers, &ev2, &ev3[0]);
-      // cl::WaitForEvents(ev3);
+      cl::WaitForEvents(ev3);
     } catch (cl::Error error) {
-      std::cout << error.what() << "(" << oclErrorString(error.err()) << ")"
-                << std::endl;
-      std::exit(1);
+      throw error;
     }
     m_writing_mutex.unlock();
   }

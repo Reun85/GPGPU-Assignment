@@ -5,3 +5,4 @@ src/.vs
 output.md
 /old/*
 src/x64
+/src/test.txt

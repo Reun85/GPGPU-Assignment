@@ -12,7 +12,7 @@
 #include "ParametricSurfaceMesh.hpp"
 #include "SDL_GLDebugMessageCallback.h"
 
-CMyApp::CMyApp(int PARTICLE_SIZE) { particle_count = PARTICLE_SIZE; }
+CMyApp::CMyApp() {}
 
 CMyApp::~CMyApp() {}
 
@@ -248,7 +248,7 @@ void CMyApp::Update(const SUpdateInfo &updateInfo) {
 
 void CMyApp::UpdatedParticles() { needstoupdate = true; }
 
-#include <CL/opencl.hpp>
+#include <CLPreComp.h>
 void CMyApp::InitGeometry() {
   glGenVertexArrays(1, &VAO);
   glBindVertexArray(VAO);
@@ -256,9 +256,9 @@ void CMyApp::InitGeometry() {
   // Create and bind a Vertex Buffer Object (VBO)
   glGenBuffers(1, &VBO);
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, particle_count * sizeof(cl_float3), NULL,
+  glBufferData(GL_ARRAY_BUFFER, 0 * sizeof(cl_float4), NULL,
                GL_STATIC_DRAW);  // Specify the layout of the vertex data
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float3),
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
                         reinterpret_cast<const void *>(
                             0));  // a 0. indexű attribútum hol kezdődik a
   glEnableVertexAttribArray(0);
@@ -268,6 +268,23 @@ void CMyApp::InitGeometry() {
 
   // Skybox
   InitSkyboxGeometry();
+}
+
+void CMyApp::SetParticleCount(int count) {
+  particle_count = count;
+  glBindVertexArray(VAO);
+
+  // Create and bind a Vertex Buffer Object (VBO)
+  glBindBuffer(GL_ARRAY_BUFFER, VBO);
+  glBufferData(GL_ARRAY_BUFFER, count * sizeof(cl_float4), NULL,
+               GL_STATIC_DRAW);  // Specify the layout of the vertex data
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
+                        reinterpret_cast<const void *>(
+                            0));  // a 0. indexű attribútum hol kezdődik a
+  glEnableVertexAttribArray(0);
+
+  // Unbind the VAO
+  glBindVertexArray(0);
 }
 
 void CMyApp::Render() {

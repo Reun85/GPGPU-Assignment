@@ -102,10 +102,21 @@ void Camera::UpdateDistance(float dDistance) {
   UpdateParams();
 }
 
+void Camera::SetFirstPerson(bool _firstperson) {
+  firstperson = _firstperson;
+  UpdateParams();
+}
+
 void Camera::UpdateParams() {
   glm::vec3 lookDirection(cosf(m_u) * sinf(m_v), cosf(m_v),
                           sinf(m_u) * sinf(m_v));
 
+  if (firstperson) {
+    m_forward = glm::normalize(lookDirection);
+    m_at = m_forward * m_distance + m_eye;
+    m_right = glm::normalize(glm::cross(m_forward, m_worldUp));
+    m_up = glm::normalize(glm::cross(m_right, m_forward));
+  } else {
   m_eye = m_at - m_distance * lookDirection;
 
   m_up = m_worldUp;
@@ -113,6 +124,7 @@ void Camera::UpdateParams() {
 
   m_forward = glm::cross(m_up, m_right);
 
+  }
   m_viewDirty = true;
 }
 

@@ -1,9 +1,5 @@
 // GLEW
-#define CL_HPP_ENABLE_EXCEPTIONS
-#define CL_TARGET_OPENCL_VERSION 300
-#define CL_HPP_TARGET_OPENCL_VERSION 300
-
-#include <CL/cl_gl.h>
+#include <CLPreComp.h>
 #include <GL/glew.h>
 
 // SDL
@@ -21,18 +17,33 @@
 #include <sstream>
 #include <thread>
 
-#include "Layout.h"
+#include "Communication.hpp"
 #include "MyApp.h"
 #include "NBody.h"
-void SecondThreadFunction(NBody& body, std::mutex& m) {
-  NBodyTimer timer;
+void SecondThreadFunction(NBody& body, Communication& comm) {
   const bool only_once = false;
   do {
-    body.Calculate(timer);
-    // if it can lock, that means we let go in main
-  } while (!(m.try_lock()) && !only_once);
+    try {
+      if (comm.GetChangesOrFalseAndReset()) {
+        auto newsettings = comm.GetNewSettings();
+        bool restarted = false;
+        if (!newsettings.only_restart)
+          restarted = body.ChangeSettings(newsettings.new_settings);
+        if (newsettings.only_restart || restarted) {
+          body.Start();
+          body.TryAndWriteData();
+        }
+      }
+      if (comm.GetRunningOrTrue()) {
+        body.Calculate();
+        body.UpdateCommunication(comm);
+      }
+    } catch (std::exception ex) {
+      comm.SetRunning(false);
+      comm.SetCrashed(ex);
+    }
+  } while (!comm.GetShutDownOrFalse());
 
-  m.unlock();
   std::cout << "Other thread stopping" << std::endl;
 }
 
@@ -173,10 +184,10 @@ int main(int argc, char* args[]) {
   ImGui_ImplOpenGL3_Init();
   // Create NBody Simulation
   {
-    NBody nbody;
+    SimulationSettingsEditor SSE;
+    NBody nbody(SSE.GetCurrSettings());
+    Communication comm = Communication();
     // When this mutex is unlocked, then the nbody sim stops.
-    std::mutex nbodystop;
-    nbodystop.lock();
 
     std::thread t;
     //
@@ -189,7 +200,7 @@ int main(int argc, char* args[]) {
       SDL_Event ev;
 
       // alkalmazás példánya
-      CMyApp app(PARTICLE_COUNT);
+      CMyApp app;
       if (!app.Init()) {
         SDL_GL_DeleteContext(context);
         SDL_DestroyWindow(win);
@@ -199,17 +210,19 @@ int main(int argc, char* args[]) {
         return 1;
       }
 
-      if (!nbody.Init(app.GetVBOAddress(), PARTICLE_COUNT)) {
+      if (SSE.GetCurrSettings().particle_count != app.GetParticleCount())
+        app.SetParticleCount(SSE.GetCurrSettings().particle_count);
+
+
+
+      if (!nbody.InitCL(app.GetVBOAddress())) {
         SDL_LogError(
             SDL_LOG_CATEGORY_ERROR,
             "[nbody.Init] Error during the initialization of the application!");
         return 1;
       }
-      Galaxy gal;
-      nbody.Start(gal.GetResult());
 
-      t = std::thread(SecondThreadFunction, std::ref(nbody),
-                      std::ref(nbodystop));
+      t = std::thread(SecondThreadFunction, std::ref(nbody), std::ref(comm));
 
       while (!quit) {
         // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
@@ -296,6 +309,26 @@ int main(int argc, char* args[]) {
                                     // egészen az ImGui::Render()-ig
 
         ImGui::NewFrame();
+        SimulationSettingsEditor::State s = SSE.Render();
+        switch (s) {
+          case SimulationSettingsEditor::State::ResetChanges:
+            if (SSE.GetCurrSettings().particle_count != app.GetParticleCount())
+              app.SetParticleCount(SSE.GetCurrSettings().particle_count);
+            comm.Change(SSE, s);
+            break;
+          case SimulationSettingsEditor::State::ResetNoChanges:
+            comm.Change(SSE, s);
+            break;
+          case SimulationSettingsEditor::State::Off:
+            comm.SetRunning(false);
+            break;
+          case SimulationSettingsEditor::State::On:
+            comm.SetRunning(true);
+            break;
+          case SimulationSettingsEditor::State::NoChanges:
+            break;
+        }
+        comm.RenderSimulationResults();
         app.RenderGUI();
         ImGui::Render();
 
@@ -303,6 +336,7 @@ int main(int argc, char* args[]) {
         SDL_GL_SwapWindow(win);
       }
 
+      comm.SetShutDown(true);
       // takarítson el maga után az objektumunk
       app.Clean();
     }  // így az app destruktora még úgy fut le, hogy él a contextünk => a GPU

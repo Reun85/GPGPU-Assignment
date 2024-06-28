@@ -21,7 +21,7 @@
 
 class CMyApp {
  public:
-  CMyApp(int PARTICLE_SIZE);
+  CMyApp();
   ~CMyApp();
 
   bool Init();
@@ -39,8 +39,10 @@ class CMyApp {
   void MouseWheel(const SDL_MouseWheelEvent &);
   void Resize(int, int);
 
-  GLuint GetVBOAddress() { return VBO; }
+  GLuint GetVBOAddress() const { return VBO; }
+  int GetParticleCount() const { return particle_count; }
 
+  void SetParticleCount(int _count);
   void UpdatedParticles();
 
  protected:
@@ -48,7 +50,7 @@ class CMyApp {
 
   // ── Data ────────────────────────────────────────────────────────────
   float m_ElapsedTimeInSec = 0.0f;
-  size_t particle_count = 0;
+  int particle_count = 0;
   bool needstoupdate = false;
 
   // ── Camera ──────────────────────────────────────────────────────────
