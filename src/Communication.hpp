@@ -4,17 +4,17 @@
 
 #include "SimulationSettings.h"
 struct SimulationData {
-  int usedNodes;
-  int allocatedNodes;
-  float boundingboxstage1ms;
-  float boundingboxstage2ms;
-  float initOctreems;
-  float buildOctreems;
-  float centerofMassms;
-  float dividecenterofmassms;
-  float barneshutms;
-  float positionupdatems;
-  float deltaTimesecond;
+  int usedNodes=0;
+  int allocatedNodes=0;
+  float boundingboxstage1ms=0;
+  float boundingboxstage2ms=0;
+  float initOctreems=0;
+  float buildOctreems=0;
+  float centerofMassms=0;
+  float dividecenterofmassms=0;
+  float barneshutms=0;
+  float positionupdatems=0;
+  float deltaTimesecond=0;
   inline float GetUps() const { return 1.0f / deltaTimesecond; }
   void Render() const {
     if (ImGui::Begin("Simulation Results")) {

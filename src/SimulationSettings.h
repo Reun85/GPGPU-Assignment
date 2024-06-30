@@ -96,7 +96,7 @@ static constexpr int DEFAULT_MIN_ENTER_DEPTH = 13;
 static constexpr int DEFAULT_MAX_DEPTH = 18;
 static constexpr float DEFAULT_MAX_TIME_STEP = 0.1f;
 static constexpr size_t DEFAULT_ALLOCATED_NODES_COUNT =
-    default_allocated_nodes_size_from_start_depth(DEFAULT_START_DEPTH, 200 * 8);
+    default_allocated_nodes_size_from_start_depth(DEFAULT_START_DEPTH, 50 * 8);
 static constexpr int DEFAULT_CENTER_OF_MASS_ITEMS_PER_THREAD = 8;
 static constexpr int DEFAULT_DIVIDE_BY_MASS_THREADS = 2048;
 static constexpr int DEFAULT_BARNES_HUT_ITEMS_PER_THREAD = 4;

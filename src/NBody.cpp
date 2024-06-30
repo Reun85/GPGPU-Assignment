@@ -178,7 +178,7 @@ void NBody::ChangeSettings(const SimulationSettings& s) {
       /////////////////////////////////
 
       // Read source file
-      std::ifstream sourceFile("openclkernels.cl");
+      std::ifstream sourceFile("openclkernels.c");
       std::string sourceCode(std::istreambuf_iterator<char>(sourceFile),
                              (std::istreambuf_iterator<char>()));
 
