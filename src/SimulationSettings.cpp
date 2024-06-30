@@ -13,21 +13,23 @@ SimulationSettings::SimulationSettings(const int _particle_count,
                                        const int _start_depth)
     : particle_count(_particle_count),
       layout(_layout),
-      distanceThreshold(_distanceThreshold),
+      distance_threshold(_distanceThreshold),
       eps(_eps),
       gravitational_constant(_gravitation_constant),
       start_depth(_start_depth) {}
 
 bool SimulationSettings::operator==(const SimulationSettings& other) const {
   return particle_count == other.particle_count &&
-         distanceThreshold == other.distanceThreshold && eps == other.eps &&
+         distance_threshold == other.distance_threshold && eps == other.eps &&
          gravitational_constant == other.gravitational_constant &&
          start_depth == other.start_depth;
 }
 SimulationSettingsEditor::SimulationSettingsEditor()
-    : currlayout(),
-      curr(DEFAULT_PARTICLE_COUNT, currlayout.GetResult(), DISTANCE_THRESHOLD,
-           EPS, GRAVITATION_CONSTANT, START_DEPTH),
+    : currlayout(DEFAULT_LAYOUT),
+      curr(DEFAULT_PARTICLE_COUNT, currlayout.GetResult(),
+           DEFAULT_DISTANCE_THRESHOLD, DEFAULT_EPS,
+           DEFAULT_GRAVITATION_CONSTANT, DEFAULT_START_DEPTH),
+      prevlayout(currlayout),
       prev(curr) {}
 
 bool SimulationSettingsEditor::has_anything_changed() const {
@@ -56,10 +58,10 @@ SimulationSettingsEditor::State SimulationSettingsEditor::Render() {
     ImGui::Text("Changeable at any time:");
     ImGui::Separator();
 
-    ImGui::InputFloat("Barnes-Hut distance threshold", &curr.distanceThreshold,
+    ImGui::InputFloat("Barnes-Hut distance threshold", &curr.distance_threshold,
                       0.005f, 0.02f);
     ImGui::SameLine();
-    ShowResetButton(curr.distanceThreshold, prev.distanceThreshold,
+    ShowResetButton(curr.distance_threshold, prev.distance_threshold,
                     "threshold");
 
     ImGui::InputFloat("Barnes-Hut epsilon", &curr.eps, 0.005f, 0.02f, "%e");
@@ -96,7 +98,7 @@ SimulationSettingsEditor::State SimulationSettingsEditor::Render() {
       } else {
         s << crash.value().what();
       }
-      ImGui::Text(s.str().c_str());
+      ImGui::Text("%s", s.str().c_str());
       ImGui::Separator();
     }
 

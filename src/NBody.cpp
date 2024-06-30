@@ -78,7 +78,6 @@ std::ostream& operator<<(std::ostream& os, const Node& n) {
 #include <iostream>
 #include <mutex>
 #include <oclutils.hpp>
-#include <random>
 #include <vector>
 
 using namespace cl;
@@ -278,7 +277,7 @@ bool NBody::ChangeSettings(std::optional<SimulationSettings> s) {
   barneshut.setArg(1, particledata);
   barneshut.setArg(2, Nodes);
   barneshut.setArg(3, settings.particle_count);
-  barneshut.setArg(4, settings.distanceThreshold);
+  barneshut.setArg(4, settings.distance_threshold);
   barneshut.setArg(5, settings.eps);
   barneshut.setArg(6, settings.gravitational_constant);
   barneshut.setArg(7, settings.barneshut_items_per_thread);
@@ -287,7 +286,7 @@ bool NBody::ChangeSettings(std::optional<SimulationSettings> s) {
   positionupdate.setArg(1, particledata);
   positionupdate.setArg(2, settings.particle_count);
   positionupdate.setArg(3, settings.position_update_items_per_thread);
-  positionupdate.setArg(4, settings.timestep);
+  positionupdate.setArg(4, settings.max_timestep);
   return requires_restart;
 }
 

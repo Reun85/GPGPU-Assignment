@@ -1,8 +1,8 @@
 #pragma once
 
-#include "SimulationSettings.h"
-
 #include <imgui.h>
+
+#include "SimulationSettings.h"
 struct SimulationData {
   int usedNodes;
   int allocatedNodes;
@@ -18,7 +18,7 @@ struct SimulationData {
   inline float GetUps() const { return 1.0f / deltaTimesecond; }
   void Render() const {
     if (ImGui::Begin("Simulation Results")) {
-      ImGui::Text("Used Nodes: %d, allocated: %d", usedNodes,allocatedNodes);
+      ImGui::Text("Used Nodes: %d, allocated: %d", usedNodes, allocatedNodes);
       ImGui::Text("Bounding Box: %fms, %fms", boundingboxstage1ms,
                   boundingboxstage2ms);
       ImGui::Text("Init Octree: %fms", initOctreems);
@@ -28,7 +28,6 @@ struct SimulationData {
       ImGui::Text("Barnes-Hut: %fms", barneshutms);
       ImGui::Text("Position Update: %fms", positionupdatems);
       ImGui::Text("Delta Time: %fs, UPS: %f", deltaTimesecond, GetUps());
-
     }
     ImGui::End();
   }
@@ -52,8 +51,8 @@ class Communication {
       settings.only_restart = false;
       settings.new_settings = sse.GetCurrSettings();
     } else {
-    settings.only_restart = true;
-    	}
+      settings.only_restart = true;
+    }
   }
   SettingChanges GetNewSettings() {
     std::lock_guard lock(m_settings);
@@ -120,9 +119,8 @@ class Communication {
   }
 
   void RenderSimulationResults() {
-      std::lock_guard lock(m_simulationdata);
-      data.Render();
-
+    std::lock_guard lock(m_simulationdata);
+    data.Render();
   }
 
   std::mutex m_changes;
