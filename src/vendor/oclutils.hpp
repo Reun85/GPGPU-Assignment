@@ -102,7 +102,7 @@ inline cl_uint oclZeroCopySizeAlignment(cl_uint requiredSize,
 
 inline cl_int oclGetTimeStats(cl_event event, cl_ulong &execStart,
                               cl_ulong &execEnd) {
-  cl_int err = CL_SUCCESS;
+  cl_int error = CL_SUCCESS;
 
   if (event == NULL) {
     std::cerr << "No event object returned!" << std::endl;
@@ -110,22 +110,22 @@ inline cl_int oclGetTimeStats(cl_event event, cl_ulong &execStart,
     clWaitForEvents(1, &event);
   }
 
-  err = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
-                                sizeof(cl_ulong), &execStart, NULL);
-  err |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END,
-                                 sizeof(cl_ulong), &execEnd, NULL);
+  error = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,
+                                  sizeof(cl_ulong), &execStart, NULL);
+  error |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END,
+                                   sizeof(cl_ulong), &execEnd, NULL);
 
-  return err;
+  return error;
 }
 
 inline cl_int oclPrintTimeStats(cl_event event) {
   cl_ulong execStart, execEnd;
-  cl_int err = oclGetTimeStats(event, execStart, execEnd);
+  cl_int error = oclGetTimeStats(event, execStart, execEnd);
 
   std::cout << "[start] " << execStart << " [end] " << execEnd << " [time] "
             << (execEnd - execStart) / 1e+06 << "ms." << std::endl;
 
-  return err;
+  return error;
 }
 
 inline void oclGetTimeStats(cl::Event operation, cl_ulong &device_start,

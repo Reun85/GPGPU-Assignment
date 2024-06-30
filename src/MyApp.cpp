@@ -64,8 +64,10 @@ void CMyApp::CleanSkyboxShaders() {
 void CMyApp::CleanGeometry() {
   CleanSkyboxGeometry();
 
-  glDeleteBuffers(1, &VBO);
-  glDeleteVertexArrays(1, &VAO);
+  for (int i = 0; i < VAOs.size(); i++) {
+    glDeleteBuffers(1, &VBOs[i]);
+    glDeleteVertexArrays(1, &VAOs[i]);
+  }
 }
 
 void CMyApp::InitSkyboxGeometry() {
@@ -245,22 +247,29 @@ void CMyApp::Update(const SUpdateInfo &updateInfo) {
   }
 }
 
-void CMyApp::UpdatedParticles() { needstoupdate = true; }
+void CMyApp::UpdatedParticles() {
+  needstoupdate = true;
+  current_VAO_ind += 1;
+  current_VAO_ind %= VAOs.size();
+}
 
 #include <CLPreComp.h>
 void CMyApp::InitGeometry() {
-  glGenVertexArrays(1, &VAO);
-  glBindVertexArray(VAO);
+  for (int i = 0; i < VAOs.size(); i++) {
+    glGenVertexArrays(1, &VAOs[i]);
+    glBindVertexArray(VAOs[i]);
 
-  // Create and bind a Vertex Buffer Object (VBO)
-  glGenBuffers(1, &VBO);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, 0 * sizeof(cl_float4), NULL,
-               GL_STATIC_DRAW);  // Specify the layout of the vertex data
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
-                        reinterpret_cast<const void *>(
-                            0));  // a 0. indexű attribútum hol kezdődik a
-  glEnableVertexAttribArray(0);
+    // Create and bind a Vertex Buffer Object (VBOs)
+    glGenBuffers(1, &VBOs[i]);
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);
+    glBufferData(GL_ARRAY_BUFFER, 0 * sizeof(cl_float4), NULL,
+                 GL_STATIC_DRAW);  // Specify the layout of the vertex data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
+                          reinterpret_cast<const void *>(
+                              0));  // a 0. indexű attribútum hol kezdődik a
+    glEnableVertexAttribArray(0);
+  }
+  current_VAO_ind = 0;
 
   // Unbind the VAO
   glBindVertexArray(0);
@@ -271,27 +280,30 @@ void CMyApp::InitGeometry() {
 
 void CMyApp::SetParticleCount(int count) {
   particle_count = count;
-  glBindVertexArray(VAO);
+  for (int i = 0; i < VAOs.size(); i++) {
+    glBindVertexArray(VAOs[i]);
 
-  // Create and bind a Vertex Buffer Object (VBO)
-  glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, count * sizeof(cl_float4), NULL,
-               GL_STATIC_DRAW);  // Specify the layout of the vertex data
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
-                        reinterpret_cast<const void *>(
-                            0));  // a 0. indexű attribútum hol kezdődik a
+    // Create and bind a Vertex Buffer Object (VBOs)
+    glBindBuffer(GL_ARRAY_BUFFER, VBOs[i]);
+    glBufferData(GL_ARRAY_BUFFER, count * sizeof(cl_float4), NULL,
+                 GL_STATIC_DRAW);  // Specify the layout of the vertex data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(cl_float4),
+                          reinterpret_cast<const void *>(
+                              0));  // a 0. indexű attribútum hol kezdődik a
+  }
   glEnableVertexAttribArray(0);
 
   // Unbind the VAO
   glBindVertexArray(0);
 }
 
-void CMyApp::Render(bool imgui_captured_mouse) {
+bool CMyApp::RenderAndHandleUserInput(bool imgui_captured_mouse) {
   static constexpr bool drawaxes = false;
+  const bool updates = needstoupdate || imgui_captured_mouse;
   //
   // Axes
   //
-  if (needstoupdate || imgui_captured_mouse) {
+  if (updates) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (drawaxes) {
       glBindVertexArray(0);
@@ -311,7 +323,7 @@ void CMyApp::Render(bool imgui_captured_mouse) {
     glUseProgram(m_programPointID);
 
     // Bind the VAO and draw points
-    glBindVertexArray(VAO);
+    glBindVertexArray(VAOs[current_VAO_ind]);
     glPointSize(1.5);
     glUniformMatrix4fv(ul("world"), 1, GL_FALSE,
                        glm::value_ptr(glm::identity<glm::mat4>()));
@@ -371,6 +383,7 @@ void CMyApp::Render(bool imgui_captured_mouse) {
 
   // VAO kikapcsolása
   glBindVertexArray(0);
+  return updates;
 }
 
 void CMyApp::RenderGUI() {

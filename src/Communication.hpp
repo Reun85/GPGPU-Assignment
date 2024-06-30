@@ -35,23 +35,27 @@ struct SimulationData {
 
 struct SettingChanges {
  public:
-  bool only_restart = true;
+  // Only regenerate particles, don't change settings.
+  bool only_regenerate = false;
   SimulationSettings new_settings;
 };
 
 class Communication {
  public:
-  void Change(SimulationSettingsEditor& sse,
-              SimulationSettingsEditor::State s) {
-    SetRunning(false);
-    std::lock_guard lock(m_changes);
-    changes = true;
-    std::lock_guard lock2(m_settings);
-    if (s == SimulationSettingsEditor::State::ResetChanges) {
-      settings.only_restart = false;
-      settings.new_settings = sse.GetCurrSettings();
-    } else {
-      settings.only_restart = true;
+  Communication(const SimulationSettings& s) : settings{false, s} {}
+  void Handle(SimulationSettingsEditor& sse,
+              const SimulationSettingsEditor::Command& cmd) {
+    SetRunning(cmd.on);
+    if (cmd.apply_changes || cmd.regenerate_particles) {
+      std::lock_guard m_change_lock(m_changes);
+      std::lock_guard m_settings_lock(m_settings);
+      changes = true;
+      if (cmd.apply_changes) {
+        settings.only_regenerate = false;
+        settings.new_settings = sse.GetCurrSettings();
+      } else {
+        settings.only_regenerate = cmd.regenerate_particles;
+      }
     }
   }
   SettingChanges GetNewSettings() {
@@ -108,12 +112,12 @@ class Communication {
     data = _new;
   }
 
-  void SetCrashed(std::exception ex) {
+  void SetCrashed(CustomCLError ex) {
     std::lock_guard lock(m_crashed);
     crashed = ex;
   }
 
-  std::optional<std::exception> GetCrashed() {
+  std::optional<CustomCLError> GetCrashed() {
     std::lock_guard lock(m_crashed);
     return crashed;
   }
@@ -124,7 +128,7 @@ class Communication {
   }
 
   std::mutex m_changes;
-  bool changes = true;
+  bool changes = false;
   std::mutex m_settings;
   SettingChanges settings;
   std::mutex m_is_running;
@@ -135,5 +139,5 @@ class Communication {
   SimulationData data;
 
   std::mutex m_crashed;
-  std::optional<std::exception> crashed;
+  std::optional<CustomCLError> crashed;
 };

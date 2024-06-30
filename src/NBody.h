@@ -3,6 +3,7 @@
 #include <CLPreComp.h>
 #include <GL/glew.h>
 
+#include <array>
 #include <chrono>
 #include <cstddef>
 #include <exception>
@@ -25,17 +26,17 @@ class NBodyTimer {
 class NBody {
  public:
   NBody(const SimulationSettings& s);
-  ~NBody();
+  ~NBody() = default;
 
   // Initialise OpenCL, attach OpenGL Buffers
-  bool InitCL(const GLuint& VBOIndex);
+  bool InitCL(const std::array<GLuint, 2>& VBOIndex);
 
   /// Generates the particles and moves them to the GPU.
-  void Start();
+  void RegenerateParticles();
 
   // Returns whether it has should be restarted
   // Giving nullopt will apply the current settings again.
-  bool ChangeSettings(const std::optional<SimulationSettings> s);
+  void ChangeSettings(const SimulationSettings& s);
 
   void Clean();
 
@@ -49,7 +50,10 @@ class NBody {
   void UpdateCommunication(Communication& comm);
 
  private:
-	 // Tests
+  // Write to all non currently active VBOs. The current VBO will be updated
+  // after setting m_newdata;
+  void WriteToAllNonUsedVBOs();
+  // Tests
   void doTesting();
 
   //          ╭─────────────────────────────────────────────────────────╮
@@ -64,12 +68,13 @@ class NBody {
   SimulationData simulation_results;
   std::mutex m_writing_mutex;
   std::mutex m_done_mutex;
-  bool m_newdata = true;
+  bool m_newdata = false;
 
   //          ╭─────────────────────────────────────────────────────────╮
   //          │                           CL                            │
   //          ╰─────────────────────────────────────────────────────────╯
-  GLuint VBO;
+  std::array<GLuint, 2> VBOs;
+  int current_VBO_ind = 0;
 
   NBodyTimer timer;
 
@@ -87,6 +92,7 @@ class NBody {
   cl::Kernel positionupdate;
 
   cl::Context context;
+  cl::vector<cl::Device> devices;
   // Simulation command_queue
   cl::CommandQueue command_queue;
   //// Copy command_queue
@@ -96,8 +102,7 @@ class NBody {
   // CL buffers
 
   // Cannot change size
-  cl::BufferGL openGLparticlepos;
-  std::vector<cl::Memory> GLbuffers;
+  std::array<cl::BufferGL, 2> openGLparticlepos;
   cl::Buffer itrBuffer;
   cl::Buffer globalMinBuffer;
   cl::Buffer globalMaxBuffer;

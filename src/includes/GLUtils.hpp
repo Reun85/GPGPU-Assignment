@@ -85,17 +85,17 @@ template <typename VertexT>
   // a frissen generált VAO beallitasa aktívnak
   glBindVertexArray(meshGPU.vaoID);
 
-  // hozzunk létre egy új VBO erőforrás nevet
+  // hozzunk létre egy új VBOs erőforrás nevet
   glGenBuffers(1, &meshGPU.vboID);
   glBindBuffer(GL_ARRAY_BUFFER,
-               meshGPU.vboID);  // tegyük "aktívvá" a létrehozott VBO-t
+               meshGPU.vboID);  // tegyük "aktívvá" a létrehozott VBOs-t
 
-  // töltsük fel adatokkal az aktív VBO-t
+  // töltsük fel adatokkal az aktív VBOs-t
   glBufferData(
-      GL_ARRAY_BUFFER,  // az aktív VBO-ba töltsünk adatokat
+      GL_ARRAY_BUFFER,  // az aktív VBOs-ba töltsünk adatokat
       mesh.vertexArray.size() * sizeof(VertexT),  // ennyi bájt nagyságban
       mesh.vertexArray.data(),  // erről a rendszermemóriabeli címről olvasva
-      GL_STATIC_DRAW);  // úgy, hogy a VBO-nkba nem tervezünk ezután írni és
+      GL_STATIC_DRAW);  // úgy, hogy a VBOs-nkba nem tervezünk ezután írni és
                         // minden kirajzoláskor felhasnzáljuk a benne lévő
                         // adatokat
 
@@ -125,7 +125,7 @@ template <typename VertexT>
 
   glBindVertexArray(0);  // feltöltüttük a VAO-t, kapcsoljuk le
   glBindBuffer(GL_ARRAY_BUFFER,
-               0);  // feltöltöttük a VBO-t is, ezt is vegyük le
+               0);  // feltöltöttük a VBOs-t is, ezt is vegyük le
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
   return meshGPU;

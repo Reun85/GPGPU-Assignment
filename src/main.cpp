@@ -1,4 +1,5 @@
 // GLEW
+#define CL_HPP_ENABLE_EXCEPTIONS
 #include <CLPreComp.h>
 #include <GL/glew.h>
 
@@ -19,27 +20,23 @@
 #include "Communication.hpp"
 #include "MyApp.h"
 #include "NBody.h"
-inline void Test(const char* id) {
-  std::cout << "Fail here? #" << id << std::endl;
-}
 void SecondThreadFunction(NBody& body, Communication& comm) {
   do {
     try {
       if (comm.GetChangesOrFalseAndReset()) {
         auto newsettings = comm.GetNewSettings();
-        bool restarted = false;
-        if (!newsettings.only_restart)
-          restarted = body.ChangeSettings(newsettings.new_settings);
-        if (newsettings.only_restart || restarted) {
-          body.Start();
-          body.TryAndWriteData();
+        if (newsettings.only_regenerate) {
+          body.RegenerateParticles();
+        }
+        if (!newsettings.only_regenerate) {
+          body.ChangeSettings(newsettings.new_settings);
         }
       }
-      if (comm.GetRunningOrTrue()) {
+      if (comm.GetRunning()) {
         body.Calculate();
         body.UpdateCommunication(comm);
       }
-    } catch (std::exception ex) {
+    } catch (CustomCLError ex) {
       comm.SetRunning(false);
       comm.SetCrashed(ex);
     }
@@ -187,7 +184,7 @@ int main(int argc, char* args[]) {
   {
     SimulationSettingsEditor SSE;
     NBody nbody(SSE.GetCurrSettings());
-    Communication comm = Communication();
+    Communication comm = Communication(SSE.GetCurrSettings());
     // When this mutex is unlocked, then the nbody sim stops.
 
     std::thread t;
@@ -211,10 +208,7 @@ int main(int argc, char* args[]) {
         return 1;
       }
 
-      if (SSE.GetCurrSettings().particle_count != app.GetParticleCount())
-        app.SetParticleCount(SSE.GetCurrSettings().particle_count);
-
-      if (!nbody.InitCL(app.GetVBOAddress())) {
+      if (!nbody.InitCL(app.GetVBOAddresses())) {
         SDL_LogError(
             SDL_LOG_CATEGORY_ERROR,
             "[nbody.Init] Error during the initialization of the application!");
@@ -223,9 +217,12 @@ int main(int argc, char* args[]) {
 
       t = std::thread(SecondThreadFunction, std::ref(nbody), std::ref(comm));
 
+      // Because the rendering is only updated when something changes, we need
+      // to first render twice to account for the initial swap buffers.
+      bool first_time = true;
       while (!quit) {
         // amíg van feldolgozandó üzenet dolgozzuk fel mindet:
-        bool is_mouse_captured;
+        bool is_mouse_captured = false;
         while (SDL_PollEvent(&ev)) {
           ImGui_ImplSDL2_ProcessEvent(&ev);
           is_mouse_captured =
@@ -302,38 +299,37 @@ int main(int argc, char* args[]) {
           app.UpdatedParticles();
         }
         app.Update(updateInfo);
-        app.Render(is_mouse_captured);
+        bool changed =
+            app.RenderAndHandleUserInput(is_mouse_captured || first_time);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame();  // Ezután lehet imgui parancsokat hívni,
-                                    // egészen az ImGui::Render()-ig
+                                    // egészen az
+                                    // ImGui::RenderAndHandleUserInput()-ig
 
         ImGui::NewFrame();
-        SimulationSettingsEditor::State s = SSE.Render();
-        switch (s) {
-          case SimulationSettingsEditor::State::ResetChanges:
-            if (SSE.GetCurrSettings().particle_count != app.GetParticleCount())
-              app.SetParticleCount(SSE.GetCurrSettings().particle_count);
-            comm.Change(SSE, s);
-            break;
-          case SimulationSettingsEditor::State::ResetNoChanges:
-            comm.Change(SSE, s);
-            break;
-          case SimulationSettingsEditor::State::Off:
-            comm.SetRunning(false);
-            break;
-          case SimulationSettingsEditor::State::On:
-            comm.SetRunning(true);
-            break;
-          case SimulationSettingsEditor::State::NoChanges:
-            break;
+        std::optional<CustomCLError> ex = comm.GetCrashed();
+        if (ex.has_value()) SSE.SetCrashed(*ex);
+        std::optional<SimulationSettingsEditor::Command> cmd =
+            SSE.RenderAndHandleUserInput();
+        if (cmd.has_value()) {
+          comm.Handle(SSE, *cmd);
+          if (cmd->apply_changes &&
+              SSE.GetCurrSettings().particle_count != app.GetParticleCount()) {
+            app.SetParticleCount(SSE.GetCurrSettings().particle_count);
+          }
         }
         comm.RenderSimulationResults();
         app.RenderGUI();
         ImGui::Render();
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        SDL_GL_SwapWindow(win);
+        if (changed || first_time) {
+          SDL_GL_SwapWindow(win);
+        }
+        if (!changed && first_time) {
+          first_time = false;
+        }
       }
 
       comm.SetShutDown(true);

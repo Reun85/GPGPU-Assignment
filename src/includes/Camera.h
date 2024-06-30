@@ -42,12 +42,12 @@ class Camera {
   void KeyboardUp(const SDL_KeyboardEvent& key);
   void MouseMove(const SDL_MouseMotionEvent& mouse);
   void MouseWheel(const SDL_MouseWheelEvent& wheel);
-  
+
   void SetFirstPerson(bool _firstperson);
   bool GetFirstPerson() const { return firstperson; }
+
  private:
   bool firstperson = false;
-
 
   // Updates the UV.
   void UpdateUV(float du, float dv);

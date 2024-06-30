@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <optional>
+#include <random>
 #include <variant>
 
 #include "ParticleDescription.h"
@@ -13,7 +14,7 @@ template <typename T>
 class Layout {
  public:
   virtual LayoutResultFunction GetResult() const = 0;
-  virtual void Render(std::optional<T> prev) = 0;
+  virtual void RenderAndHandleUserInput(std::optional<T> prev) = 0;
   virtual bool operator==(const T& other) const = 0;
 
   bool operator!=(const T& other) const { return !(*this == other); }
@@ -26,7 +27,7 @@ class Galaxy : Layout<Galaxy> {
                                          const glm::vec3 g_center,
                                          const glm::vec3 g_velocity);
   LayoutResultFunction GetResult() const override;
-  void Render(std::optional<Galaxy> prev) override;
+  void RenderAndHandleUserInput(std::optional<Galaxy> prev) override;
   bool operator==(const Galaxy& other) const override;
 
   glm::vec3 center = glm::vec3(0, 0, 0);
@@ -41,7 +42,7 @@ class GalaxiesClashing : Layout<GalaxiesClashing> {
       const glm::vec3 g2_center, const glm::vec3 g_center,
       const glm::vec3 g1_velocity, const glm::vec3 g2_velocity);
   LayoutResultFunction GetResult() const override;
-  void Render(std::optional<GalaxiesClashing> prev) override;
+  void RenderAndHandleUserInput(std::optional<GalaxiesClashing> prev) override;
   bool operator==(const GalaxiesClashing& other) const override;
 
   float default_mass = 5000;
@@ -55,7 +56,7 @@ class Uniform : Layout<Uniform> {
  public:
   static ParticleSetDescription Generate(const int size, const float);
   LayoutResultFunction GetResult() const override;
-  void Render(std::optional<Uniform> prev) override;
+  void RenderAndHandleUserInput(std::optional<Uniform> prev) override;
   bool operator==(const Uniform& other) const override;
 
   float default_mass = 5000;
@@ -70,7 +71,7 @@ class LayoutSelector {
   LayoutSelector();
   LayoutSelector(const SimulationMode&);
   // True means show Reset button
-  void Render(LayoutSelector& prev);
+  void RenderAndHandleUserInput(LayoutSelector& prev);
   LayoutResultFunction GetResult() const;
   bool operator==(const LayoutSelector& other) const;
   bool operator!=(const LayoutSelector& other) const {

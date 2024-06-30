@@ -14,6 +14,7 @@
 #include <SDL2/SDL_opengl.h>
 
 // Utils
+#include <array>
 #include <vector>
 
 #include "Camera.h"
@@ -28,7 +29,7 @@ class CMyApp {
   void Clean();
 
   void Update(const SUpdateInfo &);
-  void Render(bool);
+  bool RenderAndHandleUserInput(bool);
   void RenderGUI();
 
   void KeyboardDown(const SDL_KeyboardEvent &);
@@ -39,7 +40,7 @@ class CMyApp {
   void MouseWheel(const SDL_MouseWheelEvent &);
   void Resize(int, int);
 
-  GLuint GetVBOAddress() const { return VBO; }
+  std::array<GLuint, 2> GetVBOAddresses() const { return VBOs; }
   int GetParticleCount() const { return particle_count; }
 
   void SetParticleCount(int _count);
@@ -51,7 +52,7 @@ class CMyApp {
   // ── Data ────────────────────────────────────────────────────────────
   float m_ElapsedTimeInSec = 0.0f;
   int particle_count = 0;
-  bool needstoupdate = false;
+  bool needstoupdate = true;
 
   // ── Camera ──────────────────────────────────────────────────────────
   Camera m_camera;
@@ -63,8 +64,10 @@ class CMyApp {
   /// Uniform location
   GLint ul(const char *uniformName) noexcept;
 
-  GLuint VAO = 0;
-  GLuint VBO = 0;
+  std::array<GLuint, 2> VBOs = {0, 0};
+  std::array<GLuint, 2> VAOs = {0, 0};
+
+  int current_VAO_ind = 0;
 
   GLuint m_programID = 0;
   GLuint m_programPointID = 0;

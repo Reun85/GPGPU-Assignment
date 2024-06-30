@@ -41,7 +41,7 @@ template <typename SurfT>
       //         |    \|
       //   (i,j) A-----B (i+1,j)
       //
-      // - az (i,j)-hez tartózó 1D-s index a VBO-ban: i+j*(N+1)
+      // - az (i,j)-hez tartózó 1D-s index a VBOs-ban: i+j*(N+1)
       // - az (i,j)-hez tartózó 1D-s index az IB-ben: i*6+j*6*N
       //		(mert minden négyszöghöz 2db háromszög = 6 index
       // tartozik)

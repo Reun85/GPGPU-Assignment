@@ -18,6 +18,20 @@ typedef struct {
 #define isLeaf_PARENT 1
 #define isLeaf_EMPTY 0
 
+
+
+//Should be defined on the command line
+#ifndef BARNESHUT_STACK_SIZE
+#define BARNESHUT_STACK_SIZE 512
+#endif
+#ifndef BUILD_OCTREE_STACK_SIZE
+#define BUILD_OCTREE_STACK_SIZE 8
+#endif
+#ifndef BOUNDINGBOX_WORK_GROUP_SIZE
+#define BOUNDINGBOX_WORK_GROUP_SIZE 256
+#endif
+
+
 __kernel void BarnesHut(__global const float4* particles_pos,
                         __global ParticleData* particles_data,
                         __global const Node* nodes, const int particle_count,
@@ -28,20 +42,23 @@ __kernel void BarnesHut(__global const float4* particles_pos,
   const int start = global_id * items_per_work_group;
 
   const int end = min(start + items_per_work_group, particle_count);
-  int stack[512];
+  int stack[BARNESHUT_STACK_SIZE];
   int stackSize = 0;
   for (int id = start; id < end; id++) {
     float4 particle_pos = particles_pos[id];
     __global ParticleData* particle_data = &particles_data[id];
     float3 force = (float3)(0, 0, 0);
 
+    
+    /*
     for (int i = 0; i < 8; i++) {
       int a = nodes[0].children[i];
       for (int j = 0; j < 8; j++) {
         int b = nodes[a].children[j];
         stack[stackSize++] = b;
       }
-    }
+    }*/
+    stack[stackSize++] = 0;
 
     while (stackSize > 0) {
       const __global Node* node = &nodes[stack[--stackSize]];
@@ -58,9 +75,12 @@ __kernel void BarnesHut(__global const float4* particles_pos,
 
       if (node->isLeaf == isLeaf_LEAF ||
           d_squared < distanceThreshold * distanceThreshold) {
-        float F = (float)((G * particle_pos.w *
+        /*float F = (float)((G * particle_pos.w *
                           node->center_of_mass.w) /
-                          distance_squared);
+                          distance_squared);*/
+        float F = (float)(((double)G * (double)particle_pos.w *
+                          (double)node->center_of_mass.w) /
+                          (double)distance_squared);
         float3 add = delta * F / sqrt(distance_squared);
         force += add;
       } else 
@@ -162,15 +182,17 @@ __kernel void AddForces(__global float4* particles_pos,
 __kernel void BoundingBoxStage1(__global const float4* particles,
                                 __global float3* min_values,
                                 __global float3* max_values,
-                                const int particle_count,
-                                const int work_group_size) {
+                                const int particle_count
+                                ) {
   int group_id = get_group_id(0);
   int local_id = get_local_id(0);
   int global_id = get_global_id(0);
   int num_groups = get_num_groups(0);
 
-  __local float3 local_min[256];
-  __local float3 local_max[256];
+  const int work_group_size = BOUNDINGBOX_WORK_GROUP_SIZE;
+
+  __local float3 local_min[BOUNDINGBOX_WORK_GROUP_SIZE];
+  __local float3 local_max[BOUNDINGBOX_WORK_GROUP_SIZE];
 
   float3 min_pos = particles[0].xyz;
   float3 max_pos = particles[0].xyz;
@@ -207,15 +229,19 @@ __kernel void BoundingBoxStage1(__global const float4* particles,
   }
 }
 
+
+
 __kernel void BoundingBoxStage2(__global const float3* min_values,
                                 __global const float3* max_values,
                                 __global float3* global_min,
-                                __global float3* global_max,
-                                const int work_group_size) {
+                                __global float3* global_max
+                               ) {
   int local_id = get_local_id(0);
 
-  __local float3 local_min[256];
-  __local float3 local_max[256];
+  const int work_group_size = BOUNDINGBOX_WORK_GROUP_SIZE;
+
+  __local float3 local_min[BOUNDINGBOX_WORK_GROUP_SIZE];
+  __local float3 local_max[BOUNDINGBOX_WORK_GROUP_SIZE];
 
   local_min[local_id] = min_values[local_id];
   local_max[local_id] = max_values[local_id];
@@ -338,16 +364,15 @@ __kernel void InitOctree(__global Node* nodes, const int start_depth,
     nodes[i].center_of_mass = (float4)(0, 0, 0, 0);
   }
 }
+
+
 // Kernel for initializing the octree
 __kernel void BuildOctree(__global const float4* particles_pos,
                           __global Node* nodes,
                           __global const float3* boundingbox_min,
                           __global const float3* boundingbox_max,
                           const int particle_count, const int start_depth,
-                          __global int* itr) {
-  const int enter_depth = 8;
-  const int max_depth = 8;
-  const int STACKSIZE = 8;
+                          __global int* itr,const int enter_depth, const int max_depth) {
 
   const int global_id = get_global_id(0);
 
@@ -384,16 +409,16 @@ __kernel void BuildOctree(__global const float4* particles_pos,
                k * start_depth_size.z) +
       start_depth_size * 0.5f;
 
-  int stack[STACKSIZE];
+  int stack[BUILD_OCTREE_STACK_SIZE];
   int stackSize = 0;
 
 
-  for (int p = 0; p < particle_count / STACKSIZE; p++) {
+  for (int p = 0; p < particle_count / BUILD_OCTREE_STACK_SIZE; p++) {
     stackSize = 0;
     float3 current_block_center = start_depth_center;
     float3 current_block_size = start_depth_size / 2.0f;
-    for (size_t p2 = p * STACKSIZE;
-         p2 < min(particle_count, (p + 1) * STACKSIZE); p2++) {
+    for (size_t p2 = p * BUILD_OCTREE_STACK_SIZE;
+         p2 < min(particle_count, (p + 1) * BUILD_OCTREE_STACK_SIZE); p2++) {
       if (isinside(current_block_center - current_block_size,
                    current_block_center + current_block_size,
                    particles_pos[p2].xyz)) {

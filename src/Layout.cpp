@@ -7,7 +7,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <optional>
-#include <random>
 #include <variant>
 ParticleSetDescription Uniform::Generate(const int size,
                                          const float default_mass) {
@@ -20,8 +19,8 @@ ParticleSetDescription Uniform::Generate(const int size,
   particles.reserve(size);
   particle_data.reserve(size);
 
-  std::default_random_engine generator;
-  std::normal_distribution<float> distribution(0.0f, 1.0);
+  static std::mt19937 generator;
+  std::uniform_real_distribution<float> distribution(-1.0f, 1.0);
 
   for (size_t i = 0; i < size; ++i) {
     float x = distribution(generator);
@@ -32,15 +31,9 @@ ParticleSetDescription Uniform::Generate(const int size,
     t.y = y;
     t.z = z;
     t.w = default_mass;
-    x = distribution(generator);
-    y = distribution(generator);
-    z = distribution(generator);
-    t.x = x;
-    t.y = y;
-    t.z = z;
 
     particles.push_back(t);
-    particle_data.push_back(ParticleData{t, empty});
+    particle_data.push_back(ParticleData{empty, empty});
   }
 
   return std::make_pair(particles, particle_data);
@@ -54,9 +47,8 @@ LayoutResultFunction Uniform::GetResult() const {
 const float PI = 3.14159265359f;
 
 void GalaxySinglePointGen(std::normal_distribution<float> &distribution,
-                          std::default_random_engine &generator,
-                          const float &default_mass, float r,
-                          const glm::vec3 &g2_center,
+                          std::mt19937 &generator, const float &default_mass,
+                          float r, const glm::vec3 &g2_center,
                           const glm::vec3 &g2_velocity,
                           std::vector<cl_float4> &particles,
                           std::vector<ParticleData> &particle_data) {
@@ -71,8 +63,11 @@ void GalaxySinglePointGen(std::normal_distribution<float> &distribution,
       glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
   _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g2_center;
 
+  //glm::vec3 up = glm::vec3(0, 1, 0);
+  glm::vec3 up = glm::vec3(rotationMatrix * glm::vec4(0,1,0,1));
+
   glm::vec3 tang_vel = glm::vec3(glm::normalize(
-      glm::cross(glm::vec3(0, 1, 0), glm::vec3(_pos) - g2_center)));
+      glm::cross(up, glm::vec3(_pos) - g2_center)));
   float dis = glm::distance(glm::vec3(_pos), g2_center);
   glm::vec3 rnd_vel = tang_vel * (dis)*25.f;
   rnd_vel /= 100;
@@ -92,7 +87,7 @@ ParticleSetDescription GalaxiesClashing::Generate(
   particles.reserve(size);
   particle_data.reserve(size);
 
-  std::default_random_engine generator;
+  static std::mt19937 generator;
   std::normal_distribution<float> distribution(0.0, 1.0);
 
   float r = distribution(generator) * PI;
@@ -117,7 +112,7 @@ ParticleSetDescription Galaxy::Generate(const int size,
   particles.reserve(size);
   particle_data.reserve(size);
 
-  std::default_random_engine generator;
+  static std::mt19937 generator;
   std::normal_distribution<float> distribution(0.0, 1.0);
 
   float r = distribution(generator) * PI;
@@ -153,7 +148,7 @@ LayoutResultFunction GalaxiesClashing::GetResult() const {
                                       g_center, g1_velocity, g2_velocity);
   };
 }
-void Galaxy::Render(std::optional<Galaxy> prev) {
+void Galaxy::RenderAndHandleUserInput(std::optional<Galaxy> prev) {
   ImGui::InputFloat3("Galaxy center", glm::value_ptr(center));
 
   bool show = prev.has_value() && prev->center != center;
@@ -195,7 +190,8 @@ void Galaxy::Render(std::optional<Galaxy> prev) {
   }
 }
 
-void GalaxiesClashing::Render(std::optional<GalaxiesClashing> prev) {
+void GalaxiesClashing::RenderAndHandleUserInput(
+    std::optional<GalaxiesClashing> prev) {
   ImGui::InputFloat3("Galaxy 1 Center", glm::value_ptr(galaxy1_center));
 
   bool show = prev.has_value() && prev->galaxy1_center != galaxy1_center;
@@ -275,7 +271,7 @@ void GalaxiesClashing::Render(std::optional<GalaxiesClashing> prev) {
     ImGui::EndDisabled();
   }
 }
-void Uniform::Render(std::optional<Uniform> prev) {
+void Uniform::RenderAndHandleUserInput(std::optional<Uniform> prev) {
   ImGui::InputFloat("Average mass of particles", &default_mass, 10.f, 100.f);
 
   bool show = prev.has_value() && prev->default_mass != default_mass;
@@ -324,7 +320,7 @@ std::optional<T> LayoutSelector::TryAndParse(LayoutSelector &prev,
   }
 }
 
-void LayoutSelector::Render(LayoutSelector &prev) {
+void LayoutSelector::RenderAndHandleUserInput(LayoutSelector &prev) {
   // Convert current mode to an integer
   // index for ImGui::Combo
   int currentItem = static_cast<int>(simulation_type);
@@ -364,14 +360,16 @@ void LayoutSelector::Render(LayoutSelector &prev) {
   }
   switch (simulation_type) {
     case SimulationMode::Galaxy:
-      std::get<Galaxy>(data_variant).Render(TryAndParse<Galaxy>(prev, *this));
+      std::get<Galaxy>(data_variant)
+          .RenderAndHandleUserInput(TryAndParse<Galaxy>(prev, *this));
       break;
     case SimulationMode::GalaxiesClashing:
       std::get<GalaxiesClashing>(data_variant)
-          .Render(TryAndParse<GalaxiesClashing>(prev, *this));
+          .RenderAndHandleUserInput(TryAndParse<GalaxiesClashing>(prev, *this));
       break;
     case SimulationMode::Uniform:
-      std::get<Uniform>(data_variant).Render(TryAndParse<Uniform>(prev, *this));
+      std::get<Uniform>(data_variant)
+          .RenderAndHandleUserInput(TryAndParse<Uniform>(prev, *this));
       break;
     default:
       throw std::exception(std::bad_variant_access());
