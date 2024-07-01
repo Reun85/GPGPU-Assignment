@@ -6,3 +6,4 @@ output.md
 /old/*
 src/x64
 /src/test.txt
+/src/imgui.ini

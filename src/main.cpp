@@ -308,10 +308,14 @@ int main(int argc, char* args[]) {
                                     // ImGui::RenderAndHandleUserInput()-ig
 
         ImGui::NewFrame();
-        std::optional<CustomCLError> ex = comm.GetCrashed();
-        if (ex.has_value()) SSE.SetCrashed(*ex);
         std::optional<SimulationSettingsEditor::Command> cmd =
             SSE.RenderAndHandleUserInput();
+        if (!cmd.has_value()) {
+          std::optional<CustomCLError> ex = comm.GetCrashed();
+          if (ex.has_value()) SSE.SetCrashed(*ex);
+        } else {
+          SSE.SetCrashed(std::nullopt);
+        }
         if (cmd.has_value()) {
           comm.Handle(SSE, *cmd);
           if (cmd->apply_changes &&

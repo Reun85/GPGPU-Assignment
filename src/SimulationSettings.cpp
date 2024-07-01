@@ -10,7 +10,19 @@ bool SimulationSettings::operator==(const SimulationSettings& other) const {
   return particle_count == other.particle_count &&
          distance_threshold == other.distance_threshold && eps == other.eps &&
          gravitational_constant == other.gravitational_constant &&
-         start_depth == other.start_depth;
+         start_depth == other.start_depth &&
+         barneshut_stack_size == other.barneshut_stack_size &&
+         build_octree_stack_size == other.build_octree_stack_size &&
+         boundingbox_work_group_size == other.boundingbox_work_group_size &&
+         min_enter_depth == other.min_enter_depth &&
+         max_depth == other.max_depth &&
+         position_update_items_per_thread ==
+             other.position_update_items_per_thread &&
+         barneshut_items_per_thread == other.barneshut_items_per_thread &&
+         divide_by_mass_threads == other.divide_by_mass_threads &&
+         center_of_mass_items_per_thread ==
+             other.center_of_mass_items_per_thread &&
+         allocatedNodes == other.allocatedNodes;
 }
 SimulationSettingsEditor::SimulationSettingsEditor()
     : currlayout(DEFAULT_LAYOUT),
@@ -75,7 +87,7 @@ inline void ShowResetButton(T& curr, T& prev, const char* id,
 template <typename T, typename U>
 inline void ShowResetButton(T& curr, std::optional<T>& prev, const char* id,
                             std::function<U&(T&)> f) {
-  const bool isDisabled = !prev.has_value() || (f(*prev) += f(curr));
+  const bool isDisabled = !prev.has_value() || (f(*prev) == f(curr));
   if (isDisabled) {
     ImGui::BeginDisabled();
   }
@@ -90,7 +102,7 @@ inline void ShowResetButton(T& curr, std::optional<T>& prev, const char* id,
 
 std::string ToBestText(size_t bytes) {
   static constexpr int above = 600;
-  double b = bytes;
+  double b = (double)bytes;
   if (bytes < above) {
     return std::to_string(bytes) + " B";
   }
@@ -152,7 +164,7 @@ SimulationSettingsEditor::RenderAndHandleUserInput() {
     currlayout.RenderAndHandleUserInput(prevlayout);
 
     ImGui::Separator();
-    if (ImGui::CollapsingHeader("Secret settings")) {
+    if (ImGui::CollapsingHeader("Super secret settings")) {
       ImGui::InputInt("Barnes-Hut stack size", &curr.barneshut_stack_size);
       ImGui::SameLine();
       ShowResetButton<SimulationSettings, int>(
@@ -300,8 +312,10 @@ void SimulationSettingsEditor::Apply() {
   prevlayout = currlayout;
 }
 
-void SimulationSettingsEditor::SetCrashed(CustomCLError ex) {
+void SimulationSettingsEditor::SetCrashed(std::optional<CustomCLError> ex) {
   crash = ex;
-  ison = false;
-  prev = std::nullopt;
+  if (ex.has_value()) {
+    ison = false;
+    prev = std::nullopt;
+  }
 }

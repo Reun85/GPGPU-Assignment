@@ -99,7 +99,7 @@ static constexpr size_t DEFAULT_ALLOCATED_NODES_COUNT =
     default_allocated_nodes_size_from_start_depth(DEFAULT_START_DEPTH, 50 * 8);
 static constexpr int DEFAULT_CENTER_OF_MASS_ITEMS_PER_THREAD = 8;
 static constexpr int DEFAULT_DIVIDE_BY_MASS_THREADS = 2048;
-static constexpr int DEFAULT_BARNES_HUT_ITEMS_PER_THREAD = 4;
+static constexpr int DEFAULT_BARNES_HUT_ITEMS_PER_THREAD = 8;
 static constexpr int DEFAULT_POSITION_UPDATE_ITEMS_PER_THREAD = 16;
 static constexpr LayoutSelector::SimulationMode DEFAULT_LAYOUT =
     LayoutSelector::SimulationMode::Galaxy;
@@ -118,7 +118,7 @@ class SimulationSettingsEditor {
 
   std::optional<Command> RenderAndHandleUserInput();
 
-  void SetCrashed(CustomCLError ex);
+  void SetCrashed(std::optional<CustomCLError> ex);
 
  private:
   void Apply();

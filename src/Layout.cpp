@@ -63,11 +63,11 @@ void GalaxySinglePointGen(std::normal_distribution<float> &distribution,
       glm::rotate(glm::mat4(1.0f), r, glm::vec3(1.0f, 0.0f, 0.0f));
   _pos = glm::vec3(rotationMatrix * glm::vec4(_pos, 1.0f)) + g2_center;
 
-  //glm::vec3 up = glm::vec3(0, 1, 0);
-  glm::vec3 up = glm::vec3(rotationMatrix * glm::vec4(0,1,0,1));
+  // glm::vec3 up = glm::vec3(0, 1, 0);
+  glm::vec3 up = glm::vec3(rotationMatrix * glm::vec4(0, 1, 0, 1));
 
-  glm::vec3 tang_vel = glm::vec3(glm::normalize(
-      glm::cross(up, glm::vec3(_pos) - g2_center)));
+  glm::vec3 tang_vel =
+      glm::vec3(glm::normalize(glm::cross(up, glm::vec3(_pos) - g2_center)));
   float dis = glm::distance(glm::vec3(_pos), g2_center);
   glm::vec3 rnd_vel = tang_vel * (dis)*25.f;
   rnd_vel /= 100;

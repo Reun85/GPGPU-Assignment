@@ -4,17 +4,17 @@
 
 #include "SimulationSettings.h"
 struct SimulationData {
-  int usedNodes=0;
-  int allocatedNodes=0;
-  float boundingboxstage1ms=0;
-  float boundingboxstage2ms=0;
-  float initOctreems=0;
-  float buildOctreems=0;
-  float centerofMassms=0;
-  float dividecenterofmassms=0;
-  float barneshutms=0;
-  float positionupdatems=0;
-  float deltaTimesecond=0;
+  int usedNodes = 0;
+  int allocatedNodes = 0;
+  float boundingboxstage1ms = 0;
+  float boundingboxstage2ms = 0;
+  float initOctreems = 0;
+  float buildOctreems = 0;
+  float centerofMassms = 0;
+  float dividecenterofmassms = 0;
+  float barneshutms = 0;
+  float positionupdatems = 0;
+  float deltaTimesecond = 0;
   inline float GetUps() const { return 1.0f / deltaTimesecond; }
   void Render() const {
     if (ImGui::Begin("Simulation Results")) {
@@ -51,6 +51,8 @@ class Communication {
       std::lock_guard m_settings_lock(m_settings);
       changes = true;
       if (cmd.apply_changes) {
+        std::lock_guard m_crash_lock(m_crashed);
+        crashed = std::nullopt;
         settings.only_regenerate = false;
         settings.new_settings = sse.GetCurrSettings();
       } else {

@@ -74,7 +74,7 @@ class NBody {
   //          │                           CL                            │
   //          ╰─────────────────────────────────────────────────────────╯
   std::array<GLuint, 2> VBOs;
-  int current_VBO_ind = 0;
+  int current_VBO_ind = 1;
 
   NBodyTimer timer;
 
